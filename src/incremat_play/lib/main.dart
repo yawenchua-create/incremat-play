@@ -18,12 +18,15 @@ void main() async {
   runApp(const ProviderScope(child: IncrematPlayApp()));
 }
 
+// Only watches themeMode — highContrast is applied below MaterialApp via Theme
+// to avoid rebuilding MaterialApp and triggering GlobalKey ink renderer conflicts.
 class IncrematPlayApp extends ConsumerWidget {
   const IncrematPlayApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(accessibilityProvider.select((s) => s.themeMode));
+    final themeMode =
+        ref.watch(accessibilityProvider.select((s) => s.themeMode));
 
     return MaterialApp(
       title: 'IncreMat Play',
@@ -36,36 +39,64 @@ class IncrematPlayApp extends ConsumerWidget {
   }
 }
 
-class _AppGate extends ConsumerWidget {
+// Handles only accessibility settings. Child is const so the auth/screen
+// subtree is never structurally rebuilt when textScale or highContrast change.
+class _AppGate extends ConsumerStatefulWidget {
   const _AppGate();
 
   @override
+  ConsumerState<_AppGate> createState() => _AppGateState();
+}
+
+class _AppGateState extends ConsumerState<_AppGate> {
+  @override
+  Widget build(BuildContext context) {
+    final textScale =
+        ref.watch(accessibilityProvider.select((s) => s.textScale));
+    final highContrast =
+        ref.watch(accessibilityProvider.select((s) => s.highContrast));
+    final brightness = Theme.of(context).brightness;
+
+    final hcTheme = highContrast
+        ? (brightness == Brightness.dark
+            ? AppTheme.dark(highContrast: true)
+            : AppTheme.light(highContrast: true))
+        : Theme.of(context);
+
+    return Theme(
+      data: hcTheme,
+      child: MediaQuery(
+        data: MediaQuery.of(context).copyWith(
+          textScaler: TextScaler.linear(textScale),
+        ),
+        child: const _AuthGate(),
+      ),
+    );
+  }
+}
+
+// Const widget — Flutter reuses this element when _AppGateState rebuilds,
+// preventing any GlobalKey conflicts in the mounted IndexedStack screens.
+class _AuthGate extends ConsumerWidget {
+  const _AuthGate();
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final textScale = ref.watch(accessibilityProvider.select((s) => s.textScale));
     final authAsync = ref.watch(authStateProvider);
     final seniorIdAsync = ref.watch(seniorIdProvider);
 
-    final child = authAsync.when(
+    return authAsync.when(
       data: (user) {
         if (user == null) return const LoginScreen();
         return seniorIdAsync.when(
-          data: (id) {
-            if (id == null) return const LoginScreen();
-            return const HomeScreen();
-          },
+          data: (id) =>
+              id == null ? const LoginScreen() : const HomeScreen(),
           loading: () => const _SplashScreen(),
           error: (_, _) => const LoginScreen(),
         );
       },
       loading: () => const _SplashScreen(),
       error: (_, _) => const LoginScreen(),
-    );
-
-    return MediaQuery(
-      data: MediaQuery.of(context).copyWith(
-        textScaler: TextScaler.linear(textScale),
-      ),
-      child: child,
     );
   }
 }

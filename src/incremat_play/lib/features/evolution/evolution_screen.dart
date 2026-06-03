@@ -49,10 +49,12 @@ class _EvolutionScreenState extends State<EvolutionScreen>
   @override
   Widget build(BuildContext context) {
     final species = widget.pet.species;
-    final stageName = widget.pet.stage.label;
+    final prevName = species?.stageName(widget.previousStage)
+        ?? widget.previousStage.label;
+    final newName = species?.stageName(widget.pet.stage)
+        ?? widget.pet.stage.label;
 
     return Scaffold(
-      backgroundColor: AppColors.warmCream,
       body: Stack(
         children: [
           Align(
@@ -71,63 +73,70 @@ class _EvolutionScreenState extends State<EvolutionScreen>
             ),
           ),
           SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Amazing!',
-                    style: AppTextStyles.displayLarge.copyWith(
-                      color: AppColors.gold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Your pet has evolved!',
-                    style: AppTextStyles.bodyLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-                  ScaleTransition(
-                    scale: _scaleAnim,
-                    child: Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: AppColors.lightSage.withValues(alpha: 0.3),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                            color: AppColors.gold, width: 3),
+            child: LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 28, vertical: 24),
+                child: ConstrainedBox(
+                  constraints:
+                      BoxConstraints(minHeight: constraints.maxHeight - 48),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Amazing!',
+                        style: AppTextStyles.displayLarge.copyWith(
+                            color: AppColors.gold),
+                        textAlign: TextAlign.center,
                       ),
-                      child: Center(
-                        child: Text(
-                          species?.emoji ?? '🥚',
-                          style: const TextStyle(fontSize: 80),
+                      const SizedBox(height: 6),
+                      Text(
+                        '$prevName evolved into $newName!',
+                        style: AppTextStyles.bodyLarge,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 48),
+                      ScaleTransition(
+                        scale: _scaleAnim,
+                        child: species != null
+                            ? Image.asset(
+                                species.imagePath(widget.pet.stage),
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.contain,
+                              )
+                            : const Icon(Icons.pets,
+                                size: 160, color: AppColors.sageGreen),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        newName,
+                        style: AppTextStyles.headlineLarge.copyWith(
+                            color: AppColors.gold),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (species != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          species.stageTagline(widget.pet.stage),
+                          style: AppTextStyles.bodySmall.copyWith(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withValues(alpha: 0.6),
+                          ),
+                          textAlign: TextAlign.center,
                         ),
+                      ],
+                      const SizedBox(height: 52),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text('Wonderful!',
+                            style: AppTextStyles.buttonText),
                       ),
-                    ),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                  Text(
-                    '${widget.previousStage.label} → $stageName',
-                    style: AppTextStyles.bodySmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    species != null
-                        ? '${species.label} is now a $stageName!'
-                        : 'Your pet grew up!',
-                    style: AppTextStyles.headlineLarge,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 56),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text('Wonderful!', style: AppTextStyles.buttonText),
-                  ),
-                ],
+                ),
               ),
             ),
           ),

@@ -11,8 +11,7 @@ class HistoryScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final sessionsAsync = ref.watch(sessionsProvider);
-    final seniorAsync = ref.watch(seniorProvider);
+    final eventsAsync = ref.watch(expEventsProvider);
 
     return SafeArea(
       child: CustomScrollView(
@@ -20,53 +19,53 @@ class HistoryScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Text('History', style: AppTextStyles.displayMedium),
+              child: Text('History',
+                  style: AppTextStyles.displayMedium),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
               child: Text(
-                'Your recent exercise sessions',
-                style: AppTextStyles.bodyMedium
-                    .copyWith(color: AppColors.subtleText),
+                'Your companions\' growth journey',
+                style: AppTextStyles.bodyMedium.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55)),
               ),
             ),
           ),
-          seniorAsync.when(
-            data: (senior) => sessionsAsync.when(
-              data: (sessions) {
-                if (sessions.isEmpty) {
-                  return SliverToBoxAdapter(child: _EmptyHistory());
-                }
-                final goal = senior?.dailyRepGoal ?? 25;
-                return SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _SessionTile(
-                            session: sessions[i], dailyGoal: goal),
-                      ),
-                      childCount: sessions.length,
+          eventsAsync.when(
+            data: (events) {
+              if (events.isEmpty) {
+                return SliverToBoxAdapter(
+                    child: _EmptyHistory());
+              }
+              return SliverPadding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, i) => _ExpEventTile(
+                      event: events[i],
+                      isFirst: i == 0,
+                      isLast: i == events.length - 1,
                     ),
-                  ),
-                );
-              },
-              loading: () => const SliverToBoxAdapter(
-                child: Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(40),
-                    child: CircularProgressIndicator(
-                        color: AppColors.sageGreen),
+                    childCount: events.length,
                   ),
                 ),
+              );
+            },
+            loading: () => const SliverToBoxAdapter(
+              child: Center(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: CircularProgressIndicator(
+                      color: AppColors.sageGreen),
+                ),
               ),
-              error: (_, _) =>
-                  const SliverToBoxAdapter(child: SizedBox.shrink()),
             ),
-            loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
             error: (_, _) =>
                 const SliverToBoxAdapter(child: SizedBox.shrink()),
           ),
@@ -77,99 +76,221 @@ class HistoryScreen extends ConsumerWidget {
   }
 }
 
-class _SessionTile extends StatelessWidget {
-  final ExerciseSession session;
-  final int dailyGoal;
+class _ExpEventTile extends StatelessWidget {
+  final ExpEvent event;
+  final bool isFirst;
+  final bool isLast;
 
-  const _SessionTile({required this.session, required this.dailyGoal});
+  const _ExpEventTile({
+    required this.event,
+    required this.isFirst,
+    required this.isLast,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final goalMet = session.repCount >= dailyGoal;
-    final dateLabel = DateFormat('EEE, MMM d').format(session.date);
-    final timeLabel = DateFormat('h:mm a').format(session.date);
+    final scheme = Theme.of(context).colorScheme;
+    final dateLabel =
+        DateFormat('EEEE, MMMM d').format(event.date).toUpperCase();
+    final petSpecies = PetSpecies.values
+        .where((s) => s.name == event.species)
+        .firstOrNull;
 
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: AppColors.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.espresso.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    // Per-type accent colour, title, and subtitle.
+    final Color accent;
+    final String title;
+    final String? subtitle;
+    switch (event.type) {
+      case HistoryEventType.eggReceived:
+        accent = AppColors.gold;
+        title = 'Received a Mystery Egg';
+        subtitle = 'A new egg, ready to hatch!';
+      case HistoryEventType.hatched:
+        accent = AppColors.gold;
+        final babyName =
+            petSpecies?.stageName(PetStage.baby) ?? 'a new companion';
+        title = 'Hatched into $babyName!';
+        subtitle = petSpecies?.label;
+      case HistoryEventType.exp:
+        accent = AppColors.sageGreen;
+        title = '+${event.amount} EXP — Daily Goal Met';
+        subtitle = null;
+    }
+
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: goalMet
-                  ? AppColors.lightSage.withValues(alpha: 0.5)
-                  : AppColors.warmCream,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              goalMet ? Icons.check_circle_outline : Icons.fitness_center,
-              color: goalMet ? AppColors.sageGreen : AppColors.subtleText,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+          // Timeline column
+          SizedBox(
+            width: 28,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(dateLabel, style: AppTextStyles.labelLarge),
-                Text(timeLabel, style: AppTextStyles.caption),
+                if (!isFirst)
+                  Container(
+                      width: 2,
+                      height: 20,
+                      color: scheme.onSurface.withValues(alpha: 0.18))
+                else
+                  const SizedBox(height: 20),
+                Container(
+                  width: 13,
+                  height: 13,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent,
+                    boxShadow: [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.5),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Center(
+                      child: Container(
+                          width: 2,
+                          color: scheme.onSurface.withValues(alpha: 0.18)),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 20),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                '${session.repCount} reps',
-                style: AppTextStyles.labelLarge,
+          const SizedBox(width: 12),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(
+                top: 10,
+                bottom: isLast ? 4 : 24,
               ),
-              if (session.avgRepTimeSeconds > 0)
-                Text(
-                  '${session.avgRepTimeSeconds.toStringAsFixed(1)}s avg',
-                  style: AppTextStyles.caption,
-                ),
-            ],
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Portrait
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _buildPortrait(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            dateLabel,
+                            style: AppTextStyles.caption.copyWith(
+                              color: scheme.onSurface.withValues(alpha: 0.55),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            title,
+                            style: AppTextStyles.bodyMedium
+                                .copyWith(color: accent),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (subtitle != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              style: AppTextStyles.caption.copyWith(
+                                color:
+                                    scheme.onSurface.withValues(alpha: 0.55),
+                              ),
+                            ),
+                          ],
+                          if (event.type == HistoryEventType.exp &&
+                              event.evolved) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.gold.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Evolved to '
+                                '${petSpecies?.stageName(event.stageAfter) ?? event.stageAfter.label}!',
+                                style: AppTextStyles.caption.copyWith(
+                                  color: AppColors.gold,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPortrait() {
+    if (event.type == HistoryEventType.eggReceived) {
+      return const Icon(Icons.egg_rounded, size: 40, color: AppColors.gold);
+    }
+    if (event.species != null) {
+      return Image.asset(
+        _imagePath(event.species!, event.stageAfter),
+        fit: BoxFit.contain,
+      );
+    }
+    return const Icon(Icons.pets, size: 38, color: AppColors.sageGreen);
+  }
+
+  String _imagePath(String species, PetStage stage) {
+    final stageName = stage == PetStage.egg ? 'baby' : stage.name;
+    return 'assets/pets/${species}_$stageName.png';
   }
 }
 
 class _EmptyHistory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
         padding: const EdgeInsets.all(32),
         decoration: BoxDecoration(
-          color: AppColors.cardSurface,
+          color: scheme.surface,
           borderRadius: BorderRadius.circular(24),
         ),
         child: Column(
           children: [
-            const Icon(Icons.bar_chart_outlined,
-                size: 56, color: AppColors.lightSage),
+            Icon(Icons.auto_awesome_outlined,
+                size: 56,
+                color: scheme.onSurface.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
-            Text('No sessions yet', style: AppTextStyles.headlineSmall),
+            Text('No EXP events yet',
+                style: AppTextStyles.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              'Your exercise history will\nappear here after your first session.',
-              style: AppTextStyles.bodySmall,
+              'When your companion gains EXP,\nit will appear here.',
+              style: AppTextStyles.bodySmall.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.6)),
               textAlign: TextAlign.center,
             ),
           ],

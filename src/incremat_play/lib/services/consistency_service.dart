@@ -52,6 +52,19 @@ class ConsistencyService {
   static String _dayKey(DateTime dt) =>
       '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
 
+  /// Public day key, e.g. "2026-06-03". Used to dedupe once-per-day awards.
+  static String dayKey(DateTime dt) => _dayKey(dt);
+
+  /// True if the cumulative reps on [date]'s calendar day reach [dailyGoal].
+  static bool goalMetOn(
+      List<ExerciseSession> sessions, DateTime date, int dailyGoal) {
+    final key = _dayKey(date);
+    final reps = sessions
+        .where((s) => _dayKey(s.date) == key)
+        .fold<int>(0, (sum, s) => sum + s.repCount);
+    return reps >= dailyGoal;
+  }
+
   /// Counts how many distinct days this week the daily goal was completed.
   static int goalCompletionDaysThisWeek(
       List<ExerciseSession> sessions, int dailyGoal) =>

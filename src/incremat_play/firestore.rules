@@ -1,0 +1,90 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // True if the requesting user is the senior user who claimed this account.
+    // The play app stamps auth.uid onto seniors/{id}.seniorUserId at login.
+    function isSeniorUser(seniorId) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/seniors/$(seniorId))
+          .data.get('seniorUserId', null) == request.auth.uid;
+    }
+
+    // ── NFC UID → senior mapping ──────────────────────────────────────────────
+    // Caregivers write when enrolling a card; play app reads on NFC login.
+    match /nfc_uids/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── Join codes ────────────────────────────────────────────────────────────
+    // Readable by anyone authenticated (needed for play-app login + NFC lookup).
+    // Writable by authenticated users so caregivers can generate codes.
+    match /joinCodes/{code} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Duet lobbies ──────────────────────────────────────────────────────────
+    // Ephemeral pairing codes for the Live Duet feature. They contain only
+    // senior IDs / names / goals (no credentials), so any authenticated user
+    // may read (to join) and write (host creates, guest joins).
+    match /duets/{code} {
+      allow read, write: if request.auth != null;
+    }
+
+    // ── Caregiver access index ────────────────────────────────────────────────
+    // /caregiver_access/{caregiverId}.seniorIds lists which seniors this
+    // caregiver can see. Each caregiver owns their own document.
+    match /caregiver_access/{caregiverId} {
+      allow read, write: if request.auth != null
+                         && request.auth.uid == caregiverId;
+    }
+
+    // ── Seniors ───────────────────────────────────────────────────────────────
+    match /seniors/{seniorId} {
+      // Any authenticated user can read (needed during play-app login before
+      // seniorUserId is stamped, and by the caregiver app).
+      allow read: if request.auth != null;
+
+      // Caregivers create new seniors; both apps may update (caregiver updates
+      // goals/name; play app stamps seniorUserId).
+      allow create, update: if request.auth != null;
+
+      // ── Caregivers sub-collection ─────────────────────────────────────────
+      // Lists which caregivers have access to this senior. Any authenticated
+      // user can manage entries (primary and secondary caregiver setup).
+      match /caregivers/{caregiverId} {
+        allow read, write: if request.auth != null;
+      }
+
+      // ── Pets ─────────────────────────────────────────────────────────────
+      match /pets/{petId} {
+        allow read, write: if isSeniorUser(seniorId);
+      }
+
+      // ── EXP events ───────────────────────────────────────────────────────
+      match /expEvents/{eventId} {
+        allow read, write: if isSeniorUser(seniorId);
+      }
+
+      // ── Sessions ─────────────────────────────────────────────────────────
+      // Play app reads; caregiver app writes (and game logic also writes
+      // lastGameProcessedAt on the parent senior document via update above).
+      allow read: if isSeniorUser(seniorId);
+      match /sessions/{sessionId} {
+        allow read: if isSeniorUser(seniorId);
+        allow write: if request.auth != null;
+      }
+
+      // ── Live session ─────────────────────────────────────────────────────
+      // Caregiver app publishes live reps; play app reads them in real time.
+      // Read is open to any authenticated user so a Duet partner's app can
+      // watch the shared live rep count (low-sensitivity: just a number).
+      match /live/{docId} {
+        allow read: if request.auth != null;
+        allow write: if request.auth != null;
+      }
+    }
+  }
+}

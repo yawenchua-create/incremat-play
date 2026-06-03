@@ -31,18 +31,81 @@ extension PetStageLabel on PetStage {
 }
 
 extension PetSpeciesInfo on PetSpecies {
-  String get label {
-    switch (this) {
-      case PetSpecies.otter:
-        return 'Otter';
-      case PetSpecies.fox:
-        return 'Fox';
-      case PetSpecies.tortoise:
-        return 'Tortoise';
-      case PetSpecies.koi:
-        return 'Koi';
-    }
-  }
+  // Family display name shown in discovery grid and subtitles.
+  String get label => switch (this) {
+        PetSpecies.otter => 'Teh Tarik Otter',
+        PetSpecies.fox => 'Sun-Flare Fox',
+        PetSpecies.tortoise => 'Earth-Tortoise',
+        PetSpecies.koi => 'Zen Koi',
+      };
+
+  // Full title from the Incremon Lexicon.
+  String get familyTitle => switch (this) {
+        PetSpecies.tortoise => 'Bonsai Earth-Tortoise: Guardian of Stability',
+        PetSpecies.fox => 'Sun-Flare Fox: Spirit of Radiance',
+        PetSpecies.otter => 'Teh Tarik Otter: Weaver of Joy',
+        PetSpecies.koi => 'Zen Koi: Ascendant of Harmony',
+      };
+
+  // Stage-specific Incremon name (shown as the pet's name in-game).
+  String stageName(PetStage stage) => switch (this) {
+        PetSpecies.tortoise => switch (stage) {
+            PetStage.egg || PetStage.baby => 'Pebbleling',
+            PetStage.young => 'Mossheart',
+            PetStage.adult => 'Ancient Isle',
+          },
+        PetSpecies.fox => switch (stage) {
+            PetStage.egg || PetStage.baby => 'Spark-cub',
+            PetStage.young => 'Leafdancer',
+            PetStage.adult => 'Nine-Tailed Kitsune',
+          },
+        PetSpecies.otter => switch (stage) {
+            PetStage.egg || PetStage.baby => 'Tea-bubble',
+            PetStage.young => 'Froth-Weaver',
+            PetStage.adult => 'Froth-Dragon Otter',
+          },
+        PetSpecies.koi => switch (stage) {
+            PetStage.egg || PetStage.baby => 'Fry',
+            PetStage.young => 'Pond Dweller',
+            PetStage.adult => 'Dragon Koi',
+          },
+      };
+
+  // Short flavour description for each stage.
+  String stageTagline(PetStage stage) => switch (this) {
+        PetSpecies.tortoise => switch (stage) {
+            PetStage.egg || PetStage.baby =>
+              'A moss-kissed pebble shell, brimming with quiet potential.',
+            PetStage.young =>
+              'A resilient sprout blooms from its shell — calm, steady strength.',
+            PetStage.adult =>
+              'A living mountain landscape crowned by an ancient glowing Bonsai.',
+          },
+        PetSpecies.fox => switch (stage) {
+            PetStage.egg || PetStage.baby =>
+              'Born from the first rays of dawn, shimmering with golden light.',
+            PetStage.young =>
+              'Golden autumn leaves swirl in the wake of every graceful step.',
+            PetStage.adult =>
+              'Nine solar flare tails — a celestial marvel of pure radiance.',
+          },
+        PetSpecies.otter => switch (stage) {
+            PetStage.egg || PetStage.baby =>
+              'A tiny otter swirling with the warmth of frothy milk tea.',
+            PetStage.young =>
+              'Weaves streams of frothy tea in joyful, harmonious patterns.',
+            PetStage.adult =>
+              'Commands cascades of creamy foam — master of joyful living.',
+          },
+        PetSpecies.koi => switch (stage) {
+            PetStage.egg || PetStage.baby =>
+              'Soft hopeful scales, full of boundless unrealised potential.',
+            PetStage.young =>
+              'Glides with calm purpose in a stone basin among lily pads.',
+            PetStage.adult =>
+              'Ascends a waterfall of light with shimmering golden scales.',
+          },
+      };
 
   String imagePath(PetStage stage) {
     final stageName = (stage == PetStage.egg) ? 'baby' : stage.name;
@@ -118,6 +181,67 @@ class Pet {
         awardedAt: awardedAt,
         isHatched: isHatched ?? this.isHatched,
       );
+}
+
+// The kind of milestone recorded in the history timeline.
+enum HistoryEventType { exp, eggReceived, hatched }
+
+class ExpEvent {
+  final String id;
+  final DateTime date;
+  final String petId;
+  final String? species;
+  final PetStage stageBefore;
+  final PetStage stageAfter;
+  final int amount;
+  final bool evolved;
+  final HistoryEventType type;
+
+  const ExpEvent({
+    required this.id,
+    required this.date,
+    required this.petId,
+    required this.stageBefore,
+    required this.stageAfter,
+    required this.amount,
+    required this.evolved,
+    this.species,
+    this.type = HistoryEventType.exp,
+  });
+
+  factory ExpEvent.fromMap(String id, Map<String, dynamic> map) {
+    final beforeIdx = (map['stageBefore'] as int? ?? 0)
+        .clamp(0, PetStage.values.length - 1);
+    final afterIdx = (map['stageAfter'] as int? ?? 0)
+        .clamp(0, PetStage.values.length - 1);
+    final typeName = map['type'] as String?;
+    final type = HistoryEventType.values
+            .where((t) => t.name == typeName)
+            .firstOrNull ??
+        HistoryEventType.exp;
+    return ExpEvent(
+      id: id,
+      date: DateTime.tryParse(map['date'] as String? ?? '') ?? DateTime.now(),
+      petId: map['petId'] as String? ?? '',
+      species: map['species'] as String?,
+      stageBefore: PetStage.values[beforeIdx],
+      stageAfter: PetStage.values[afterIdx],
+      amount: map['amount'] as int? ?? 1,
+      evolved: map['evolved'] as bool? ?? false,
+      type: type,
+    );
+  }
+
+  Map<String, dynamic> toMap() => {
+        'date': date.toIso8601String(),
+        'petId': petId,
+        'species': species,
+        'stageBefore': stageBefore.index,
+        'stageAfter': stageAfter.index,
+        'amount': amount,
+        'evolved': evolved,
+        'type': type.name,
+      };
 }
 
 class ExerciseSession {

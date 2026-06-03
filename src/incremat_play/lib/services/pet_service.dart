@@ -7,11 +7,20 @@ class PetService {
   CollectionReference<Map<String, dynamic>> _pets(String seniorId) =>
       _db.collection('seniors').doc(seniorId).collection('pets');
 
+  CollectionReference<Map<String, dynamic>> _events(String seniorId) =>
+      _db.collection('seniors').doc(seniorId).collection('expEvents');
+
   Stream<List<Pet>> watchPets(String seniorId) => _pets(seniorId)
       .orderBy('awardedAt', descending: false)
       .snapshots()
       .map((snap) =>
           snap.docs.map((d) => Pet.fromMap(d.id, d.data())).toList());
+
+  Future<Pet?> getPet(String seniorId, String petId) async {
+    final doc = await _pets(seniorId).doc(petId).get();
+    if (!doc.exists) return null;
+    return Pet.fromMap(doc.id, doc.data()!);
+  }
 
   Future<Pet?> getActivePet(String seniorId) async {
     final snap = await _pets(seniorId)
@@ -34,26 +43,51 @@ class PetService {
 
   Future<String> awardEgg(String seniorId) async {
     final ref = _pets(seniorId).doc();
+    final now = DateTime.now();
     final pet = Pet(
       id: ref.id,
       seniorId: seniorId,
       stage: PetStage.egg,
       exp: 0,
-      awardedAt: DateTime.now(),
+      awardedAt: now,
       isHatched: false,
     );
     await ref.set(pet.toMap());
+    // Record a history milestone for receiving the egg.
+    await _events(seniorId).add(ExpEvent(
+      id: '',
+      date: now,
+      petId: ref.id,
+      stageBefore: PetStage.egg,
+      stageAfter: PetStage.egg,
+      amount: 0,
+      evolved: false,
+      type: HistoryEventType.eggReceived,
+    ).toMap());
     return ref.id;
   }
 
   Future<void> hatchEgg(String seniorId, String petId) async {
     final species =
         PetSpecies.values[DateTime.now().microsecond % PetSpecies.values.length];
+    final now = DateTime.now();
     await _pets(seniorId).doc(petId).update({
       'isHatched': true,
       'stage': PetStage.baby.index,
-      'speciesIndex': species.index,
+      'species': species.name,
     });
+    // Record a history milestone for the hatch.
+    await _events(seniorId).add(ExpEvent(
+      id: '',
+      date: now,
+      petId: petId,
+      species: species.name,
+      stageBefore: PetStage.egg,
+      stageAfter: PetStage.baby,
+      amount: 0,
+      evolved: false,
+      type: HistoryEventType.hatched,
+    ).toMap());
   }
 
   Future<void> addExp(String seniorId, String petId, int amount) async {

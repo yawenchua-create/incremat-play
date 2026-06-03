@@ -9,7 +9,20 @@ final authStateProvider = StreamProvider<User?>(
 );
 
 final seniorIdProvider = FutureProvider<String?>((ref) async {
-  final user = await ref.watch(authStateProvider.future);
+  // Watch the auth VALUE (not .future) so this re-runs on every auth emission —
+  // including the anonymous user that appears right after the first sign-in.
+  // Using .future only resolved once (to the startup null), which left the app
+  // stuck on the login screen until a second sign-in attempt.
+  final authState = ref.watch(authStateProvider);
+  if (authState.isLoading) return null;
+  final user = authState.valueOrNull;
   if (user == null) return null;
-  return ref.read(authServiceProvider).getSavedSeniorId();
+  final authService = ref.read(authServiceProvider);
+  final id = await authService.getSavedSeniorId();
+  if (id != null) {
+    // Heal any uid drift so Firestore rules keep granting access to the
+    // pets / expEvents sub-collections for this account.
+    await authService.ensureClaimed(id);
+  }
+  return id;
 });

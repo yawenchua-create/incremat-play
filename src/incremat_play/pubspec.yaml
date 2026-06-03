@@ -26,6 +26,8 @@ dependencies:
   # UI
   google_fonts: ^6.2.1
   confetti: ^0.7.0
+  video_player: ^2.9.2
+  nfc_manager: ^3.3.0
 
   # Utils
   intl: ^0.19.0
@@ -39,10 +41,18 @@ dev_dependencies:
   riverpod_generator: ^2.4.3
   custom_lint: ^0.7.6
 
+# Android-only app. Pin the iOS video implementation to a pre-objective_c
+# version so package:objective_c (whose native build hook fails on Windows
+# paths containing spaces) is kept out of the build entirely.
+dependency_overrides:
+  video_player_avfoundation: 2.6.1
+  path_provider_foundation: 2.4.1
+
 flutter:
   uses-material-design: true
 
   assets:
     - assets/images/
     - assets/pets/
+    - assets/animations/
 

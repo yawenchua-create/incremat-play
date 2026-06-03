@@ -1,10 +1,14 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../models/pet.dart';
 import '../../providers/accessibility_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/senior_provider.dart';
+import '../../services/pet_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -17,6 +21,7 @@ class ProfileScreen extends ConsumerWidget {
     final highContrast = ref.watch(accessibilityProvider.select((s) => s.highContrast));
     final notifier = ref.read(accessibilityProvider.notifier);
 
+    final scheme = Theme.of(context).colorScheme;
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -28,7 +33,8 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               'Your settings & accessibility',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.subtleText),
+              style: AppTextStyles.bodyMedium.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.55)),
             ),
             const SizedBox(height: 28),
             seniorAsync.when(
@@ -56,7 +62,9 @@ class ProfileScreen extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('A', style: AppTextStyles.bodySmall),
+                      Text('A',
+                          style: AppTextStyles.bodySmall.copyWith(
+                              color: scheme.onSurface.withValues(alpha: 0.6))),
                       Text(
                         'A',
                         style: AppTextStyles.bodyLarge.copyWith(fontSize: 24),
@@ -105,11 +113,16 @@ class ProfileScreen extends ConsumerWidget {
                     value: highContrast,
                     onChanged: (v) => notifier.setHighContrast(v),
                     activeThumbColor: AppColors.sageGreen,
-                    activeTrackColor: AppColors.lightSage,
+                    activeTrackColor:
+                        AppColors.sageGreen.withValues(alpha: 0.4),
                   ),
                 ],
               ),
             ),
+            if (kDebugMode) ...[
+              const SizedBox(height: 28),
+              const _DebugPanel(),
+            ],
             const SizedBox(height: 28),
             OutlinedButton.icon(
               onPressed: () => _confirmSignOut(context, ref),
@@ -166,14 +179,15 @@ class _ProfileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.espresso.withValues(alpha: 0.05),
+            color: scheme.onSurface.withValues(alpha: 0.05),
             blurRadius: 12,
             offset: const Offset(0, 3),
           ),
@@ -184,8 +198,8 @@ class _ProfileCard extends StatelessWidget {
           Container(
             width: 64,
             height: 64,
-            decoration: const BoxDecoration(
-              color: AppColors.lightSage,
+            decoration: BoxDecoration(
+              color: AppColors.sageGreen.withValues(alpha: 0.18),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.person, size: 36, color: AppColors.sageGreen),
@@ -195,7 +209,9 @@ class _ProfileCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(name, style: AppTextStyles.headlineLarge),
-              Text('Exerciser', style: AppTextStyles.bodySmall),
+              Text('Exerciser',
+                  style: AppTextStyles.bodySmall.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.55))),
             ],
           ),
         ],
@@ -212,10 +228,11 @@ class _SettingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.cardSurface,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -251,8 +268,8 @@ class _ThemeOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.lightSage.withValues(alpha: 0.3)
-              : AppColors.warmCream,
+              ? AppColors.sageGreen.withValues(alpha: 0.14)
+              : Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: selected ? AppColors.sageGreen : Colors.transparent,
@@ -263,12 +280,19 @@ class _ThemeOption extends StatelessWidget {
           children: [
             Icon(icon,
                 size: 20,
-                color: selected ? AppColors.sageGreen : AppColors.subtleText),
+                color: selected
+                    ? AppColors.sageGreen
+                    : Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.55)),
             const SizedBox(width: 12),
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: selected ? AppColors.sageGreen : AppColors.espresso,
+                color: selected
+                    ? AppColors.sageGreen
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const Spacer(),
@@ -277,6 +301,143 @@ class _ThemeOption extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DebugPanel extends ConsumerStatefulWidget {
+  const _DebugPanel();
+
+  @override
+  ConsumerState<_DebugPanel> createState() => _DebugPanelState();
+}
+
+class _DebugPanelState extends ConsumerState<_DebugPanel> {
+  bool _busy = false;
+  String? _lastMsg;
+  final _petService = PetService();
+
+  Future<void> _run(Future<void> Function(String seniorId) action) async {
+    final seniorId = await ref.read(seniorIdProvider.future);
+    if (seniorId == null) {
+      setState(() { _lastMsg = 'No senior ID — are you logged in?'; });
+      return;
+    }
+    setState(() { _busy = true; _lastMsg = null; });
+    try {
+      await action(seniorId);
+      setState(() { _lastMsg = 'Done'; });
+    } catch (e) {
+      setState(() { _lastMsg = e.toString(); });
+    } finally {
+      setState(() { _busy = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.terracotta.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.terracotta.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bug_report_outlined,
+                  size: 16, color: AppColors.terracotta),
+              const SizedBox(width: 6),
+              Text('Debug (test only)',
+                  style: AppTextStyles.labelLarge
+                      .copyWith(color: AppColors.terracotta)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _DebugButton(
+                label: 'Award Egg',
+                busy: _busy,
+                onTap: () => _run((id) => _petService.awardEgg(id)),
+              ),
+              _DebugButton(
+                label: '+5 EXP',
+                busy: _busy,
+                onTap: () => _run((id) async {
+                  // Target the pet currently shown on Home/Sanctuary, not just
+                  // the most-recently-awarded one.
+                  final pet = ref.read(activePetProvider);
+                  if (pet == null) return;
+                  final stageBefore = pet.stage;
+                  await _petService.addExp(id, pet.id, 5);
+                  final updated = await _petService.getPet(id, pet.id);
+                  final evolved =
+                      updated != null && updated.stage != stageBefore;
+                  await FirebaseFirestore.instance
+                      .collection('seniors')
+                      .doc(id)
+                      .collection('expEvents')
+                      .add(ExpEvent(
+                        id: '',
+                        date: DateTime.now(),
+                        petId: pet.id,
+                        species: pet.species?.name,
+                        stageBefore: stageBefore,
+                        stageAfter: updated?.stage ?? stageBefore,
+                        amount: 5,
+                        evolved: evolved,
+                      ).toMap());
+                }),
+              ),
+              _DebugButton(
+                label: 'Clear Egg Cooldown',
+                busy: _busy,
+                onTap: () => _run((id) async {
+                  await FirebaseFirestore.instance
+                      .collection('seniors')
+                      .doc(id)
+                      .update({'lastEggAwardedWeek': null});
+                }),
+              ),
+            ],
+          ),
+          if (_lastMsg != null) ...[
+            const SizedBox(height: 8),
+            Text(_lastMsg!,
+                style: AppTextStyles.caption
+                    .copyWith(color: AppColors.terracotta)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _DebugButton extends StatelessWidget {
+  final String label;
+  final bool busy;
+  final VoidCallback onTap;
+  const _DebugButton(
+      {required this.label, required this.busy, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: busy ? null : onTap,
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.terracotta,
+        side: BorderSide(color: AppColors.terracotta.withValues(alpha: 0.4)),
+        minimumSize: Size.zero,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      ),
+      child: Text(label, style: AppTextStyles.caption),
     );
   }
 }

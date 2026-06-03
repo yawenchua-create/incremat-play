@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- NFC for tag-based login -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+
+    <!-- Internet for Firebase and Google Fonts -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="incremat_play"
         android:name="${applicationName}"

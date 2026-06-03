@@ -10,8 +10,6 @@ class GameService {
   final _seniorService = SeniorService();
   final _db = FirebaseFirestore.instance;
 
-  /// Called when a new exercise session is logged for a senior.
-  /// Checks if an egg should be awarded, and awards EXP to the active pet.
   Future<EggAwardResult> onSessionLogged({
     required String seniorId,
     required Senior senior,
@@ -36,21 +34,50 @@ class GameService {
       eggAwarded = true;
     }
 
-    final activePet = await _petService.getActivePet(seniorId);
+    // EXP is awarded at most ONCE per day, and only on a day the senior
+    // actually completes their daily rep goal. Without these guards every
+    // logged session granted +1 EXP, so the pet gained EXP continuously.
     bool evolved = false;
-    if (activePet != null && activePet.stage != PetStage.adult) {
-      final stageBefore = activePet.stage;
-      await _petService.addExp(seniorId, activePet.id, 1);
-      final updated = await _petService.getActivePet(seniorId);
-      evolved = updated != null && updated.stage != stageBefore;
+    final dayKey = ConsistencyService.dayKey(sessionDate);
+    final goalMet = ConsistencyService.goalMetOn(
+        sessionsThisWeek, sessionDate, senior.dailyRepGoal);
+    final lastExpDay = await _getLastExpAwardedDay(seniorId);
+
+    if (goalMet && lastExpDay != dayKey) {
+      final activePet = await _petService.getActivePet(seniorId);
+      // Only consume the day's award when a pet actually exists, so a pet
+      // hatched later the same day can still receive its first EXP.
+      if (activePet != null) {
+        if (activePet.stage != PetStage.adult) {
+          final stageBefore = activePet.stage;
+          await _petService.addExp(seniorId, activePet.id, 1);
+          final updated = await _petService.getActivePet(seniorId);
+          evolved = updated != null && updated.stage != stageBefore;
+
+          await _db
+              .collection('seniors')
+              .doc(seniorId)
+              .collection('expEvents')
+              .add(ExpEvent(
+                id: '',
+                date: sessionDate,
+                petId: activePet.id,
+                species: activePet.species?.name,
+                stageBefore: stageBefore,
+                stageAfter: updated?.stage ?? stageBefore,
+                amount: 1,
+                evolved: evolved,
+              ).toMap());
+        }
+        await _setLastExpAwardedDay(seniorId, dayKey);
+      }
     }
 
     return EggAwardResult(eggAwarded: eggAwarded, evolved: evolved);
   }
 
   Future<String?> _getLastEggAwardedWeek(String seniorId) async {
-    final snap =
-        await _db.collection('seniors').doc(seniorId).get();
+    final snap = await _db.collection('seniors').doc(seniorId).get();
     return snap.data()?['lastEggAwardedWeek'] as String?;
   }
 
@@ -59,6 +86,18 @@ class GameService {
         .collection('seniors')
         .doc(seniorId)
         .update({'lastEggAwardedWeek': week});
+  }
+
+  Future<String?> _getLastExpAwardedDay(String seniorId) async {
+    final snap = await _db.collection('seniors').doc(seniorId).get();
+    return snap.data()?['lastExpAwardedDay'] as String?;
+  }
+
+  Future<void> _setLastExpAwardedDay(String seniorId, String day) async {
+    await _db
+        .collection('seniors')
+        .doc(seniorId)
+        .update({'lastExpAwardedDay': day});
   }
 }
 

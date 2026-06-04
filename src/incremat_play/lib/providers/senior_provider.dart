@@ -93,15 +93,11 @@ final sessionsProvider = StreamProvider<List<ExerciseSession>>((ref) {
 });
 
 final liveSessionProvider = StreamProvider<LiveSession?>((ref) {
-  final idAsync = ref.watch(seniorIdProvider);
-  return idAsync.when(
-    data: (id) {
-      if (id == null) return const Stream.empty();
-      return ref.watch(seniorServiceProvider).watchLiveSession(id);
-    },
-    loading: () => const Stream.empty(),
-    error: (_, _) => const Stream.empty(),
-  );
+  // Use valueOrNull so the subscription starts the moment the ID is available,
+  // without waiting for a full .when() cycle (loading → data transition).
+  final id = ref.watch(seniorIdProvider).valueOrNull;
+  if (id == null) return const Stream.empty();
+  return ref.read(seniorServiceProvider).watchLiveSession(id);
 });
 
 // Live session of any senior by id — used to watch a Duet partner's reps.

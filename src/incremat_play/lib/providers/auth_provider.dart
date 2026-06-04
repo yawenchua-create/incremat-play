@@ -8,20 +8,15 @@ final authStateProvider = StreamProvider<User?>(
   (ref) => ref.watch(authServiceProvider).authStateChanges,
 );
 
+// Reads the saved senior ID from SharedPreferences only.
+// Does NOT watch authStateProvider — that caused a race where signInAnonymously()
+// fired authStateChanges before SharedPreferences was written, returning null
+// mid-login and forcing a second attempt.
+// This provider is invalidated explicitly after login and sign-out.
 final seniorIdProvider = FutureProvider<String?>((ref) async {
-  // Watch the auth VALUE (not .future) so this re-runs on every auth emission —
-  // including the anonymous user that appears right after the first sign-in.
-  // Using .future only resolved once (to the startup null), which left the app
-  // stuck on the login screen until a second sign-in attempt.
-  final authState = ref.watch(authStateProvider);
-  if (authState.isLoading) return null;
-  final user = authState.valueOrNull;
-  if (user == null) return null;
   final authService = ref.read(authServiceProvider);
   final id = await authService.getSavedSeniorId();
   if (id != null) {
-    // Heal any uid drift so Firestore rules keep granting access to the
-    // pets / expEvents sub-collections for this account.
     await authService.ensureClaimed(id);
   }
   return id;

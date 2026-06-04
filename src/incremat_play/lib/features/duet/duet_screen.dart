@@ -520,9 +520,16 @@ class _ParticipantCard extends StatelessWidget {
               ],
             ),
           ),
-          Text('$reps',
-              style: AppTextStyles.statMedium
-                  .copyWith(color: live ? AppColors.sageGreen : null)),
+          SizedBox(
+            width: 56,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text('$reps',
+                  style: AppTextStyles.statMedium
+                      .copyWith(color: live ? AppColors.sageGreen : null)),
+            ),
+          ),
         ],
       ),
     );

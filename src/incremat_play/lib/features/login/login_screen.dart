@@ -57,9 +57,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           final error = await ref.read(authServiceProvider).signInWithNfcUid(uid);
           if (!mounted) return;
           if (error == null) {
-            // Re-subscribe to auth so the gate sees the new user immediately,
-            // then refresh the senior lookup.
-            ref.invalidate(authStateProvider);
+            // SharedPreferences now has the senior ID — tell the provider to re-read it.
+            // Do NOT invalidate authStateProvider; that causes a brief null flash.
             ref.invalidate(seniorIdProvider);
           }
           setState(() { _isLoading = false; _error = error; });
@@ -91,9 +90,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final error = await ref.read(authServiceProvider).signInWithJoinCode(code);
       if (!mounted) return;
       if (error == null) {
-        // Re-subscribe to auth so the gate sees the new user immediately,
-        // then refresh the senior lookup.
-        ref.invalidate(authStateProvider);
+        // SharedPreferences now has the senior ID — tell the provider to re-read it.
+        // Do NOT invalidate authStateProvider; that causes a brief null flash.
         ref.invalidate(seniorIdProvider);
       }
       setState(() { _isLoading = false; _error = error; });

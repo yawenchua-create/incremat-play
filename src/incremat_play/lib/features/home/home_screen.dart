@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../models/senior.dart';
 import '../../providers/auth_provider.dart';
@@ -184,6 +185,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
 
     // Seed celebration state from any already-loaded pets so the first data
     // load never fires a notice for pre-existing eggs/pets.
@@ -212,26 +214,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         backgroundColor: scheme.surface,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
+            label: l.navHome,
           ),
           NavigationDestination(
-            icon: Icon(Icons.park_outlined),
-            selectedIcon: Icon(Icons.park),
-            label: 'Sanctuary',
+            icon: const Icon(Icons.park_outlined),
+            selectedIcon: const Icon(Icons.park),
+            label: l.navSanctuary,
           ),
           NavigationDestination(
-            icon: Icon(Icons.bar_chart_outlined),
-            selectedIcon: Icon(Icons.bar_chart),
-            label: 'History',
+            icon: const Icon(Icons.bar_chart_outlined),
+            selectedIcon: const Icon(Icons.bar_chart),
+            label: l.navHistory,
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
-            label: 'Profile',
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
+            label: l.navProfile,
           ),
         ],
       ),
@@ -244,6 +246,7 @@ class _PlayTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final seniorAsync = ref.watch(seniorProvider);
     final petsAsync = ref.watch(petsProvider);
     final sessionsAsync = ref.watch(sessionsProvider);
@@ -288,7 +291,7 @@ class _PlayTab extends ConsumerWidget {
                               color: scheme.onSurface,
                             ),
                             children: [
-                              const TextSpan(text: 'Hello, '),
+                              TextSpan(text: l.helloPrefix),
                               TextSpan(
                                 text: senior.name,
                                 style: TextStyle(color: AppColors.sageGreen),
@@ -297,7 +300,7 @@ class _PlayTab extends ConsumerWidget {
                             ],
                           ),
                         )
-                      : Text('Hello!', style: AppTextStyles.displayLarge),
+                      : Text(l.helloPlain, style: AppTextStyles.displayLarge),
                 ),
                 const SizedBox(height: 10),
                 // Date — pill with backdrop for legibility over the image
@@ -373,6 +376,7 @@ class _DuetButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -405,11 +409,11 @@ class _DuetButton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Exercise Together',
+                    Text(l.exerciseTogether,
                         style: AppTextStyles.labelLarge,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
-                    Text('Pair up & count reps live',
+                    Text(l.pairCountLive,
                         style: AppTextStyles.caption.copyWith(
                             color: scheme.onSurface.withValues(alpha: 0.55)),
                         maxLines: 1,
@@ -440,6 +444,7 @@ class _WeeklyProgressPath extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final l = AppLocalizations.of(context);
     final today = DateTime.now();
     final weekStart = today.subtract(Duration(days: today.weekday - 1));
     final days = List.generate(7, (i) => weekStart.add(Duration(days: i)));
@@ -493,8 +498,8 @@ class _WeeklyProgressPath extends StatelessWidget {
     }
 
     final summaryText = completedDays == 7
-        ? 'All 7 goals met this week — amazing!'
-        : '$completedDays of 7 goals met this week';
+        ? l.allGoalsMet
+        : l.goalsMetThisWeek(completedDays);
 
     return Container(
       decoration: BoxDecoration(
@@ -523,7 +528,7 @@ class _WeeklyProgressPath extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Weekly Progress Path',
+                child: Text(l.weeklyProgressPath,
                     style: AppTextStyles.headlineSmall,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
@@ -575,8 +580,8 @@ class _WeeklyProgressPath extends StatelessWidget {
                         Flexible(
                           child: Text(
                             goalComplete
-                                ? "Today's Goal — Complete!"
-                                : "Today's Goal",
+                                ? l.todaysGoalComplete
+                                : l.todaysGoal,
                             style: AppTextStyles.caption.copyWith(
                               color: goalComplete
                                   ? AppColors.sageGreen
@@ -616,7 +621,7 @@ class _WeeklyProgressPath extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '/ ${senior.dailyRepGoal} reps',
+                    l.repsGoal(senior.dailyRepGoal),
                     style: AppTextStyles.caption.copyWith(
                       color: scheme.onSurface.withValues(alpha: 0.55),
                     ),
@@ -658,7 +663,7 @@ class _StreakChip extends StatelessWidget {
               size: 18, color: Color(0xFFE8761A)),
           const SizedBox(width: 4),
           Text(
-            '$days day${days == 1 ? '' : 's'}',
+            AppLocalizations.of(context).streakDays(days),
             style: AppTextStyles.caption.copyWith(
               color: const Color(0xFFC75B12),
               fontWeight: FontWeight.w800,
@@ -716,7 +721,7 @@ class _LiveBadgeState extends State<_LiveBadge>
           ),
           const SizedBox(width: 5),
           Text(
-            'LIVE',
+            AppLocalizations.of(context).liveBadge,
             style: AppTextStyles.caption.copyWith(
               color: AppColors.terracotta,
               fontWeight: FontWeight.w800,
@@ -817,6 +822,7 @@ class _PetDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     Widget petWidget;
     String displayName;
     Widget? badge;
@@ -831,13 +837,13 @@ class _PetDisplay extends StatelessWidget {
               fit: BoxFit.contain,
             )
           : const Icon(Icons.pets, size: 160, color: AppColors.sageGreen);
-      displayName = pet.species?.stageName(pet.stage) ?? 'Companion';
+      displayName = pet.species?.stageName(pet.stage) ?? l.companion;
       badge = pet.stage != PetStage.adult
-          ? _ExpBadge('${pet.exp} / ${pet.stage.expToNext} EXP')
-          : _ExpBadge('Fully Grown!');
+          ? _ExpBadge(l.expProgress(pet.exp, pet.stage.expToNext))
+          : _ExpBadge(l.fullyGrown);
     } else {
       petWidget = const _AnimatedEgg(size: 220);
-      displayName = 'Mystery Egg';
+      displayName = l.mysteryEgg;
       badge = null;
     }
 
@@ -881,7 +887,7 @@ class _PetDisplay extends StatelessWidget {
                       size: 18, color: AppColors.gold),
                   const SizedBox(width: 6),
                   Text(
-                    'You have an egg ready to hatch!',
+                    l.eggReadyToHatch,
                     style: AppTextStyles.bodySmall
                         .copyWith(color: AppColors.gold),
                   ),
@@ -979,7 +985,7 @@ class _HatchButton extends ConsumerWidget {
               children: [
                 const Icon(Icons.egg_alt_outlined, color: Colors.white, size: 24),
                 const SizedBox(width: 10),
-                Text('Hatch Now!', style: AppTextStyles.buttonText),
+                Text(AppLocalizations.of(context).hatchNow, style: AppTextStyles.buttonText),
               ],
             ),
           ),
@@ -1015,11 +1021,11 @@ class _EmptyPetsCard extends StatelessWidget {
               size: 60,
               color: scheme.onSurface.withValues(alpha: 0.2)),
           const SizedBox(height: 14),
-          Text('No companions yet',
+          Text(AppLocalizations.of(context).noCompanionsYet,
               style: AppTextStyles.headlineSmall),
           const SizedBox(height: 10),
           Text(
-            'Complete your daily exercise goal\nconsistently to earn your first egg!',
+            AppLocalizations.of(context).earnFirstEgg,
             style: AppTextStyles.bodyMedium.copyWith(
                 color: scheme.onSurface.withValues(alpha: 0.55)),
             textAlign: TextAlign.center,

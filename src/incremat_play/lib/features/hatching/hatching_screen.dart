@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:video_player/video_player.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/senior_provider.dart';
 
@@ -211,8 +212,8 @@ class _HatchingScreenState extends ConsumerState<HatchingScreen>
             children: [
               Text(
                 _phase == _Phase.shaking
-                    ? 'It\'s hatching!'
-                    : 'Your egg is ready!',
+                    ? AppLocalizations.of(context).itsHatching
+                    : AppLocalizations.of(context).eggIsReady,
                 style: AppTextStyles.displayLarge
                     .copyWith(color: AppColors.gold),
                 textAlign: TextAlign.center,
@@ -220,8 +221,8 @@ class _HatchingScreenState extends ConsumerState<HatchingScreen>
               const SizedBox(height: 8),
               Text(
                 _phase == _Phase.shaking
-                    ? 'Something\'s coming out...'
-                    : 'Get ready...',
+                    ? AppLocalizations.of(context).somethingComingOut
+                    : AppLocalizations.of(context).getReady,
                 style: AppTextStyles.bodyLarge,
                 textAlign: TextAlign.center,
               ),
@@ -279,7 +280,7 @@ class _HatchingScreenState extends ConsumerState<HatchingScreen>
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'It hatched!',
+          AppLocalizations.of(context).itHatched,
           style: AppTextStyles.displayLarge.copyWith(color: AppColors.gold),
           textAlign: TextAlign.center,
         ),
@@ -321,14 +322,14 @@ class _HatchingScreenState extends ConsumerState<HatchingScreen>
           ),
         ] else
           Text(
-            'A new companion appeared!',
+            AppLocalizations.of(context).newCompanionAppeared,
             style: AppTextStyles.bodyLarge,
             textAlign: TextAlign.center,
           ),
         const SizedBox(height: 40),
         ElevatedButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text('Let\'s go!', style: AppTextStyles.buttonText),
+          child: Text(AppLocalizations.of(context).letsGo, style: AppTextStyles.buttonText),
         ),
       ],
     );

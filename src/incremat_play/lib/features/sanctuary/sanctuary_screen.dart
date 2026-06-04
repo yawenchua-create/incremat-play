@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/senior_provider.dart';
 
@@ -27,14 +28,15 @@ class SanctuaryScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Text('Sanctuary', style: AppTextStyles.displayMedium),
+              child: Text(AppLocalizations.of(context).sanctuaryTitle,
+                  style: AppTextStyles.displayMedium),
             ),
           ),
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
               child: Text(
-                'Your journey & companions',
+                AppLocalizations.of(context).sanctuarySubtitle,
                 style: AppTextStyles.bodyMedium.copyWith(
                     color: scheme.onSurface.withValues(alpha: 0.55)),
               ),
@@ -43,7 +45,7 @@ class SanctuaryScreen extends ConsumerWidget {
 
           // ── Section 1: Active Lineage ──────────────────────────────────
           SliverToBoxAdapter(
-            child: _SectionHeader(label: '1. ACTIVE LINEAGE'),
+            child: _SectionHeader(label: AppLocalizations.of(context).activeLineage),
           ),
 
           // Pet selector (only visible when 2+ hatched pets)
@@ -72,7 +74,7 @@ class SanctuaryScreen extends ConsumerWidget {
 
           // ── Section 2: Discoveries ─────────────────────────────────────
           SliverToBoxAdapter(
-            child: _SectionHeader(label: '2. DISCOVERIES'),
+            child: _SectionHeader(label: AppLocalizations.of(context).discoveries),
           ),
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -152,7 +154,7 @@ class _PetSelector extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Choose companion',
+            AppLocalizations.of(context).chooseCompanion,
             style: AppTextStyles.caption.copyWith(
               color: scheme.onSurface.withValues(alpha: 0.55),
               fontWeight: FontWeight.w600,
@@ -248,6 +250,7 @@ class _DiscoveryDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     const stages = [PetStage.baby, PetStage.young, PetStage.adult];
     final isSameSpecies = activePet?.species == species;
@@ -304,9 +307,9 @@ class _DiscoveryDetailSheet extends StatelessWidget {
                         ),
                         Text(
                           discovered
-                              ? '${species.label} · $unlockedCount of '
-                                  '${stages.length} evolutions unlocked'
-                              : 'Undiscovered',
+                              ? l.evolutionsUnlocked(
+                                  species.label, unlockedCount, stages.length)
+                              : l.undiscovered,
                           style: AppTextStyles.bodySmall.copyWith(
                             color: discovered
                                 ? AppColors.sageGreen
@@ -379,6 +382,7 @@ class _StageDetailRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
@@ -448,7 +452,7 @@ class _StageDetailRow extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'NOW',
+                          l.nowBadge,
                           style: AppTextStyles.caption.copyWith(
                             color: AppColors.gold,
                             fontWeight: FontWeight.w700,
@@ -472,7 +476,7 @@ class _StageDetailRow extends StatelessWidget {
                 Text(
                   unlocked
                       ? species.stageTagline(stage)
-                      : 'Reach this evolution to reveal its story.',
+                      : l.reachToReveal,
                   style: AppTextStyles.bodySmall.copyWith(
                     color: unlocked
                         ? scheme.onSurface.withValues(alpha: 0.6)
@@ -566,6 +570,7 @@ class _LineageRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final isReached = pet.stage.index >= stage.index;
     final isCurrent = pet.stage == stage;
@@ -693,8 +698,7 @@ class _LineageRow extends StatelessWidget {
                             Text(
                               unlocked && pet.species != null
                                   ? pet.species!.stageTagline(stage)
-                                  : 'A future evolution — keep growing to '
-                                      'reveal it.',
+                                  : l.futureEvolution,
                               style: AppTextStyles.caption.copyWith(
                                 color: isReached
                                     ? scheme.onSurface.withValues(alpha: 0.55)
@@ -715,7 +719,7 @@ class _LineageRow extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${pet.exp} / ${stage.expToNext} EXP',
+                                l.expBadge(pet.exp, stage.expToNext),
                                 style: AppTextStyles.caption.copyWith(
                                     color: scheme.onSurface
                                         .withValues(alpha: 0.6)),
@@ -723,7 +727,7 @@ class _LineageRow extends StatelessWidget {
                             ] else if (isCurrent &&
                                 stage == PetStage.adult) ...[
                               Text(
-                                'Fully grown!',
+                                l.fullyGrownLower,
                                 style: AppTextStyles.bodyMedium
                                     .copyWith(color: AppColors.gold),
                               ),
@@ -734,7 +738,7 @@ class _LineageRow extends StatelessWidget {
                                       size: 14, color: AppColors.sageGreen),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Evolved',
+                                    l.evolvedShort,
                                     style: AppTextStyles.caption.copyWith(
                                         color: AppColors.sageGreen),
                                   ),
@@ -742,7 +746,7 @@ class _LineageRow extends StatelessWidget {
                               ),
                             ] else ...[
                               Text(
-                                'Not yet reached',
+                                l.notYetReached,
                                 style: AppTextStyles.caption.copyWith(
                                     color: scheme.onSurface
                                         .withValues(alpha: 0.38)),
@@ -782,7 +786,7 @@ class _EmptyLineage extends StatelessWidget {
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                'Hatch your first egg to begin your lineage!',
+                AppLocalizations.of(context).hatchFirstEgg,
                 style: AppTextStyles.bodyMedium.copyWith(
                     color: scheme.onSurface.withValues(alpha: 0.55)),
               ),
@@ -869,7 +873,8 @@ class _DiscoveryCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text(
-                '${species.label} · $unlockedCount/$totalStages',
+                AppLocalizations.of(context)
+                    .speciesProgress(species.label, unlockedCount, totalStages),
                 style: AppTextStyles.caption.copyWith(
                   color: AppColors.sageGreen,
                   fontSize: 13,

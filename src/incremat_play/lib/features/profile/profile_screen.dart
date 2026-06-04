@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/accessibility_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/locale_provider.dart';
 import '../../providers/senior_provider.dart';
 import '../../services/pet_service.dart';
 
@@ -15,11 +17,13 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
     final seniorAsync = ref.watch(seniorProvider);
     final textScale = ref.watch(accessibilityProvider.select((s) => s.textScale));
     final themeMode = ref.watch(accessibilityProvider.select((s) => s.themeMode));
     final highContrast = ref.watch(accessibilityProvider.select((s) => s.highContrast));
     final notifier = ref.read(accessibilityProvider.notifier);
+    final locale = ref.watch(localeProvider);
 
     final scheme = Theme.of(context).colorScheme;
     return SafeArea(
@@ -29,10 +33,10 @@ class ProfileScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 24),
-            Text('Profile', style: AppTextStyles.displayMedium),
+            Text(l.profileTitle, style: AppTextStyles.displayMedium),
             const SizedBox(height: 4),
             Text(
-              'Your settings & accessibility',
+              l.profileSubtitle,
               style: AppTextStyles.bodyMedium.copyWith(
                   color: scheme.onSurface.withValues(alpha: 0.55)),
             ),
@@ -45,10 +49,37 @@ class ProfileScreen extends ConsumerWidget {
               error: (_, _) => const SizedBox.shrink(),
             ),
             const SizedBox(height: 24),
-            Text('Accessibility', style: AppTextStyles.headlineSmall),
+            _SettingCard(
+              title: l.language,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _LangOption(
+                      label: l.english,
+                      selected: locale.languageCode == 'en',
+                      onTap: () => ref
+                          .read(localeProvider.notifier)
+                          .setLocale(const Locale('en')),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _LangOption(
+                      label: l.chinese,
+                      selected: locale.languageCode == 'zh',
+                      onTap: () => ref
+                          .read(localeProvider.notifier)
+                          .setLocale(const Locale('zh')),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(l.accessibility, style: AppTextStyles.headlineSmall),
             const SizedBox(height: 12),
             _SettingCard(
-              title: 'Text Size',
+              title: l.textSize,
               child: Column(
                 children: [
                   Slider(
@@ -76,25 +107,25 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             _SettingCard(
-              title: 'Appearance',
+              title: l.appearance,
               child: Column(
                 children: [
                   _ThemeOption(
-                    label: 'Light',
+                    label: l.themeLight,
                     icon: Icons.light_mode_outlined,
                     selected: themeMode == ThemeMode.light,
                     onTap: () => notifier.setThemeMode(ThemeMode.light),
                   ),
                   const SizedBox(height: 8),
                   _ThemeOption(
-                    label: 'Dark',
+                    label: l.themeDark,
                     icon: Icons.dark_mode_outlined,
                     selected: themeMode == ThemeMode.dark,
                     onTap: () => notifier.setThemeMode(ThemeMode.dark),
                   ),
                   const SizedBox(height: 8),
                   _ThemeOption(
-                    label: 'System',
+                    label: l.themeSystem,
                     icon: Icons.phone_android_outlined,
                     selected: themeMode == ThemeMode.system,
                     onTap: () => notifier.setThemeMode(ThemeMode.system),
@@ -104,11 +135,11 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             _SettingCard(
-              title: 'High Contrast',
+              title: l.highContrast,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Enable high contrast', style: AppTextStyles.bodyMedium),
+                  Text(l.enableHighContrast, style: AppTextStyles.bodyMedium),
                   Switch(
                     value: highContrast,
                     onChanged: (v) => notifier.setHighContrast(v),
@@ -127,7 +158,7 @@ class ProfileScreen extends ConsumerWidget {
             OutlinedButton.icon(
               onPressed: () => _confirmSignOut(context, ref),
               icon: const Icon(Icons.logout, size: 20),
-              label: Text('Sign Out', style: AppTextStyles.labelLarge.copyWith(
+              label: Text(l.signOut, style: AppTextStyles.labelLarge.copyWith(
                 color: AppColors.terracotta,
               )),
               style: OutlinedButton.styleFrom(
@@ -144,23 +175,24 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _confirmSignOut(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Sign out?', style: AppTextStyles.headlineSmall),
+        title: Text(l.signOutQ, style: AppTextStyles.headlineSmall),
         content: Text(
-          'You can sign back in with your play code.',
+          l.signOutBody,
           style: AppTextStyles.bodyMedium,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
+            child: Text(l.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
-              'Sign Out',
+              l.signOut,
               style: TextStyle(color: AppColors.terracotta),
             ),
           ),
@@ -209,7 +241,7 @@ class _ProfileCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(name, style: AppTextStyles.headlineLarge),
-              Text('Exerciser',
+              Text(AppLocalizations.of(context).exerciser,
                   style: AppTextStyles.bodySmall.copyWith(
                       color: scheme.onSurface.withValues(alpha: 0.55))),
             ],
@@ -299,6 +331,49 @@ class _ThemeOption extends StatelessWidget {
             if (selected)
               const Icon(Icons.check, size: 18, color: AppColors.sageGreen),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LangOption extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _LangOption({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.sageGreen.withValues(alpha: 0.14)
+              : Theme.of(context).scaffoldBackgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? AppColors.sageGreen : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: AppTextStyles.bodyMedium.copyWith(
+              color: selected
+                  ? AppColors.sageGreen
+                  : Theme.of(context).colorScheme.onSurface,
+              fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
         ),
       ),
     );

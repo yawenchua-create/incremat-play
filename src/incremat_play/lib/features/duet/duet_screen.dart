@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/duet_session.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/senior_provider.dart';
@@ -47,7 +48,9 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
           seniorId: me.id, name: me.name, goal: me.goal);
       await ref.read(duetCodeProvider.notifier).setCode(code);
     } catch (_) {
-      if (mounted) setState(() => _error = 'Could not create a duet. Try again.');
+      if (mounted) {
+        setState(() => _error = AppLocalizations.of(context).couldNotCreateDuet);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -72,7 +75,9 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
         await ref.read(duetCodeProvider.notifier).setCode(code.toUpperCase());
       }
     } catch (_) {
-      if (mounted) setState(() => _error = 'Could not join. Check the code.');
+      if (mounted) {
+        setState(() => _error = AppLocalizations.of(context).couldNotJoinDuet);
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -95,7 +100,8 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text('Exercise Together', style: AppTextStyles.headlineSmall),
+        title: Text(AppLocalizations.of(context).exerciseTogether,
+            style: AppTextStyles.headlineSmall),
       ),
       body: SafeArea(
         child: code == null ? _buildLobby() : _buildSession(code),
@@ -106,6 +112,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
   // ── Lobby: create or join ───────────────────────────────────────────────────
 
   Widget _buildLobby() {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
@@ -126,12 +133,11 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          Text('Work out as a pair',
+          Text(l.workOutAsPair,
               style: AppTextStyles.headlineLarge, textAlign: TextAlign.center),
           const SizedBox(height: 8),
           Text(
-            'Exercise at the same time as a friend or family member — your reps '
-            'add together on one live meter.',
+            l.duetIntro,
             style: AppTextStyles.bodyMedium
                 .copyWith(color: scheme.onSurface.withValues(alpha: 0.6)),
             textAlign: TextAlign.center,
@@ -148,7 +154,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2.5, color: Colors.white))
                   : const Icon(Icons.add_rounded, color: Colors.white),
-              label: Text('Create a Duet', style: AppTextStyles.buttonText),
+              label: Text(l.createDuet, style: AppTextStyles.buttonText),
             ),
           ),
           const SizedBox(height: 20),
@@ -159,7 +165,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
                       Divider(color: scheme.onSurface.withValues(alpha: 0.15))),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text('or join one',
+                child: Text(l.orJoinOne,
                     style: AppTextStyles.caption.copyWith(
                         color: scheme.onSurface.withValues(alpha: 0.5))),
               ),
@@ -174,7 +180,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             textCapitalization: TextCapitalization.characters,
             style: AppTextStyles.headlineSmall.copyWith(letterSpacing: 4),
             textAlign: TextAlign.center,
-            decoration: const InputDecoration(hintText: 'Enter duet code'),
+            decoration: InputDecoration(hintText: l.enterDuetCode),
             onSubmitted: (_) => _join(),
           ),
           if (_error != null) ...[
@@ -186,7 +192,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             height: 52,
             child: OutlinedButton(
               onPressed: _busy ? null : _join,
-              child: Text('Join Duet',
+              child: Text(l.joinDuet,
                   style: AppTextStyles.labelLarge
                       .copyWith(color: AppColors.sageGreen)),
             ),
@@ -199,14 +205,15 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
   // ── Active duet ──────────────────────────────────────────────────────────────
 
   Widget _buildSession(String code) {
+    final l = AppLocalizations.of(context);
     final sessionAsync = ref.watch(duetSessionProvider(code));
     return sessionAsync.when(
       loading: () => const Center(
           child: CircularProgressIndicator(color: AppColors.sageGreen)),
-      error: (_, _) => _endedView('Couldn\'t load this duet.'),
+      error: (_, _) => _endedView(l.couldntLoadDuet),
       data: (session) {
         if (session == null) {
-          return _endedView('This duet has ended.');
+          return _endedView(l.duetEnded);
         }
         final myId = ref.watch(seniorIdProvider).valueOrNull;
         final amHost = session.hostId == myId;
@@ -220,7 +227,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
         return _liveView(
           session: session,
           partnerId: partnerId,
-          partnerName: partnerName ?? 'Partner',
+          partnerName: partnerName ?? l.partner,
           partnerGoal: partnerGoal ?? 25,
         );
       },
@@ -228,12 +235,13 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
   }
 
   Widget _waitingView(String code, DuetSession session) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
       child: Column(
         children: [
-          Text('Share this code with your partner',
+          Text(l.shareCodeWithPartner,
               style: AppTextStyles.bodyMedium.copyWith(
                   color: scheme.onSurface.withValues(alpha: 0.6)),
               textAlign: TextAlign.center),
@@ -242,7 +250,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             onTap: () {
               Clipboard.setData(ClipboardData(text: code));
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Duet code copied')),
+                SnackBar(content: Text(l.duetCodeCopied)),
               );
             },
             child: Container(
@@ -270,13 +278,13 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
           const SizedBox(height: 36),
           const CircularProgressIndicator(color: AppColors.sageGreen),
           const SizedBox(height: 16),
-          Text('Waiting for your partner to join…',
+          Text(l.waitingForPartner,
               style: AppTextStyles.bodyMedium,
               textAlign: TextAlign.center),
           const SizedBox(height: 40),
           TextButton(
             onPressed: () => _leave(session),
-            child: Text('Cancel',
+            child: Text(l.cancel,
                 style: AppTextStyles.labelLarge
                     .copyWith(color: AppColors.terracotta)),
           ),
@@ -291,9 +299,10 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     required String partnerName,
     required int partnerGoal,
   }) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final me = ref.watch(seniorProvider).valueOrNull;
-    final myName = me?.name ?? 'You';
+    final myName = me?.name ?? l.youWord;
     final myGoal = me?.dailyRepGoal ?? 25;
 
     final myLive = ref.watch(liveSessionProvider).valueOrNull;
@@ -328,7 +337,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             ),
             child: Column(
               children: [
-                Text(reached ? 'Amazing teamwork! 🎉' : 'Reps together',
+                Text(reached ? l.amazingTeamwork : l.repsTogether,
                     style: AppTextStyles.labelLarge.copyWith(
                         color: AppColors.sageGreen, letterSpacing: 0.5)),
                 const SizedBox(height: 6),
@@ -347,7 +356,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text('$total / $target combined goal',
+                Text(l.combinedGoal(total, target),
                     style: AppTextStyles.caption.copyWith(
                         color: scheme.onSurface.withValues(alpha: 0.6))),
               ],
@@ -372,7 +381,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             onPressed: () => _leave(session),
             icon: const Icon(Icons.logout_rounded,
                 size: 20, color: AppColors.terracotta),
-            label: Text('End Duet',
+            label: Text(l.endDuet,
                 style: AppTextStyles.labelLarge
                     .copyWith(color: AppColors.terracotta)),
             style: OutlinedButton.styleFrom(
@@ -402,7 +411,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             ElevatedButton(
               onPressed: () =>
                   ref.read(duetCodeProvider.notifier).setCode(null),
-              child: Text('Back', style: AppTextStyles.buttonText),
+              child: Text(AppLocalizations.of(context).back, style: AppTextStyles.buttonText),
             ),
           ],
         ),
@@ -447,6 +456,7 @@ class _ParticipantCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -482,7 +492,7 @@ class _ParticipantCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isYou ? '$name (you)' : name,
+                Text(isYou ? l.nameYou(name) : name,
                     style: AppTextStyles.labelLarge,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
@@ -501,7 +511,7 @@ class _ParticipantCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      live ? 'Exercising now' : 'Waiting to start…',
+                      live ? l.exercisingNow : l.waitingToStart,
                       style: AppTextStyles.caption.copyWith(
                           color: scheme.onSurface.withValues(alpha: 0.55)),
                     ),

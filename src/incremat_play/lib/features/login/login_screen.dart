@@ -6,6 +6,7 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager/platform_tags.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -38,6 +39,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _scanNfc() async {
+    final l = AppLocalizations.of(context);
     setState(() { _nfcScanning = true; _error = null; });
     await NfcManager.instance.startSession(
       onDiscovered: (tag) async {
@@ -48,13 +50,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         if (uid == null) {
           setState(() {
             _nfcScanning = false;
-            _error = 'Could not read card. Try again.';
+            _error = l.couldNotReadCard;
           });
           return;
         }
         setState(() { _isLoading = true; _nfcScanning = false; _error = null; });
         try {
-          final error = await ref.read(authServiceProvider).signInWithNfcUid(uid);
+          final error = await ref.read(authServiceProvider).signInWithNfcUid(uid, l);
           if (!mounted) return;
           if (error == null) {
             // Re-subscribe to auth so the gate sees the new user immediately,
@@ -65,7 +67,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           setState(() { _isLoading = false; _error = error; });
         } catch (_) {
           if (!mounted) return;
-          setState(() { _isLoading = false; _error = 'Something went wrong. Please try again.'; });
+          setState(() { _isLoading = false; _error = l.somethingWentWrong; });
         }
       },
     );
@@ -86,9 +88,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Future<void> _signIn() async {
     final code = _ctrl.text.trim();
     if (code.isEmpty) return;
+    final l = AppLocalizations.of(context);
     setState(() { _isLoading = true; _error = null; });
     try {
-      final error = await ref.read(authServiceProvider).signInWithJoinCode(code);
+      final error = await ref.read(authServiceProvider).signInWithJoinCode(code, l);
       if (!mounted) return;
       if (error == null) {
         // Re-subscribe to auth so the gate sees the new user immediately,
@@ -99,12 +102,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       setState(() { _isLoading = false; _error = error; });
     } catch (_) {
       if (!mounted) return;
-      setState(() { _isLoading = false; _error = 'Something went wrong. Please try again.'; });
+      setState(() { _isLoading = false; _error = l.somethingWentWrong; });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final topInset = MediaQuery.of(context).padding.top;
@@ -156,7 +160,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Your daily exercise companion',
+                    l.appTagline,
                     style: AppTextStyles.bodyMedium.copyWith(
                       color: Colors.white.withValues(alpha: 0.85),
                     ),
@@ -181,11 +185,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  Text('Enter your play code',
+                  Text(l.enterPlayCode,
                       style: AppTextStyles.headlineSmall),
                   const SizedBox(height: 6),
                   Text(
-                    'Your caregiver will give you this code.',
+                    l.caregiverGivesCode,
                     style: AppTextStyles.bodySmall.copyWith(
                         color: scheme.onSurface.withValues(alpha: 0.6)),
                   ),
@@ -238,7 +242,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: CircularProgressIndicator(
                                 strokeWidth: 2.5, color: Colors.white),
                           )
-                        : Text('Get Started', style: AppTextStyles.buttonText),
+                        : Text(l.getStarted, style: AppTextStyles.buttonText),
                   ),
                   if (_nfcAvailable) ...[
                     const SizedBox(height: 16),
@@ -249,7 +253,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 color: scheme.onSurface.withValues(alpha: 0.15))),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: Text('or',
+                          child: Text(l.or,
                               style: AppTextStyles.caption.copyWith(
                                   color:
                                       scheme.onSurface.withValues(alpha: 0.5))),
@@ -283,7 +287,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               )
                             : const Icon(Icons.nfc, size: 22),
                         label: Text(
-                          _nfcScanning ? 'Hold tag to phone…' : 'Tap NFC Tag',
+                          _nfcScanning ? l.holdTagToPhone : l.tapNfcTag,
                           style: AppTextStyles.buttonText
                               .copyWith(color: AppColors.sageGreen),
                         ),
@@ -292,7 +296,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                   const SizedBox(height: 36),
                   Text(
-                    'Ask your caregiver for your play code\nif you don\'t have one yet.',
+                    l.askCaregiverForCode,
                     style: AppTextStyles.bodySmall.copyWith(
                         color: scheme.onSurface.withValues(alpha: 0.6)),
                     textAlign: TextAlign.center,

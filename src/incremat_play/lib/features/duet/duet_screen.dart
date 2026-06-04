@@ -500,19 +500,30 @@ class _ParticipantCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      live ? 'Exercising now' : 'Waiting to start…',
-                      style: AppTextStyles.caption.copyWith(
-                          color: scheme.onSurface.withValues(alpha: 0.55)),
+                    Flexible(
+                      child: Text(
+                        live ? 'Exercising now' : 'Waiting to start…',
+                        style: AppTextStyles.caption.copyWith(
+                            color: scheme.onSurface.withValues(alpha: 0.55)),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          Text('$reps',
-              style: AppTextStyles.statMedium
-                  .copyWith(color: live ? AppColors.sageGreen : null)),
+          SizedBox(
+            width: 56,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text('$reps',
+                  style: AppTextStyles.statMedium
+                      .copyWith(color: live ? AppColors.sageGreen : null)),
+            ),
+          ),
         ],
       ),
     );

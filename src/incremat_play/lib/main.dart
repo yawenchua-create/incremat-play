@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/home_screen.dart';
 import 'features/login/login_screen.dart';
+import 'l10n/app_localizations.dart';
 import 'providers/accessibility_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/locale_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +29,7 @@ class IncrematPlayApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode =
         ref.watch(accessibilityProvider.select((s) => s.themeMode));
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp(
       title: 'IncreMat Play',
@@ -34,6 +37,9 @@ class IncrematPlayApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: const _AppGate(),
     );
   }

@@ -2,6 +2,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Full-screen celebration shown when the user is awarded a new egg.
 class EggAwardScreen extends StatefulWidget {
@@ -92,14 +93,14 @@ class _EggAwardScreenState extends State<EggAwardScreen>
                       ),
                       const SizedBox(height: 36),
                       Text(
-                        'You earned an egg!',
+                        AppLocalizations.of(context).youEarnedEgg,
                         style: AppTextStyles.displayLarge
                             .copyWith(color: AppColors.gold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'A new companion is waiting inside.\nVisit Home to hatch it!',
+                        AppLocalizations.of(context).companionWaiting,
                         style: AppTextStyles.bodyLarge.copyWith(
                           color: Theme.of(context)
                               .colorScheme
@@ -113,7 +114,7 @@ class _EggAwardScreenState extends State<EggAwardScreen>
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          child: Text('Wonderful!',
+                          child: Text(AppLocalizations.of(context).wonderful,
                               style: AppTextStyles.buttonText),
                         ),
                       ),

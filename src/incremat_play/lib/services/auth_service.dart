@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../l10n/app_localizations.dart';
+
 class AuthService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
@@ -15,7 +17,7 @@ class AuthService {
   User? get currentUser => _auth.currentUser;
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  Future<String?> signInWithJoinCode(String code) async {
+  Future<String?> signInWithJoinCode(String code, AppLocalizations l) async {
     final upperCode = code.trim().toUpperCase();
 
     try {
@@ -25,7 +27,7 @@ class AuthService {
       }
       final user = _auth.currentUser;
       if (user == null) {
-        return 'Could not sign in. Please try again.';
+        return l.couldNotSignIn;
       }
       // Ensure the fresh auth token has propagated to the Firestore SDK before
       // the first authenticated read, otherwise the first attempt can be
@@ -38,12 +40,12 @@ class AuthService {
           .get()
           .timeout(_timeout);
       if (!snap.exists) {
-        return 'Code not found. Check the code and try again.';
+        return l.codeNotFound;
       }
 
       final seniorId = snap.data()?['seniorId'] as String?;
       if (seniorId == null) {
-        return 'This code is not set up correctly. Ask your caregiver.';
+        return l.codeNotSetUp;
       }
 
       // Claim this anonymous UID on the senior document so Firestore rules
@@ -60,20 +62,20 @@ class AuthService {
 
       return null;
     } on TimeoutException {
-      return 'Connection timed out. Check your internet and try again.';
+      return l.connectionTimedOut;
     } on FirebaseException catch (e) {
       switch (e.code) {
         case 'permission-denied':
-          return 'This code is linked to another device. Ask your caregiver.';
+          return l.codeLinkedOtherDevice;
         case 'operation-not-allowed':
-          return 'Sign-in is not enabled for this app. Ask your caregiver.';
+          return l.signInNotEnabled;
         case 'network-request-failed':
-          return 'No internet connection. Please try again.';
+          return l.noInternet;
         default:
-          return 'Something went wrong (${e.code}). Please try again.';
+          return l.errorWithCode(e.code);
       }
     } catch (_) {
-      return 'Something went wrong. Please try again.';
+      return l.somethingWentWrong;
     }
   }
 
@@ -84,21 +86,21 @@ class AuthService {
 
   /// Signs in by reading a card's UID and looking up the enrolled senior.
   /// Returns null on success, or an error message string on failure.
-  Future<String?> signInWithNfcUid(String uid) async {
+  Future<String?> signInWithNfcUid(String uid, AppLocalizations l) async {
     try {
       if (_auth.currentUser == null) {
         await _auth.signInAnonymously().timeout(_timeout);
       }
       final user = _auth.currentUser;
-      if (user == null) return 'Could not sign in. Please try again.';
+      if (user == null) return l.couldNotSignIn;
       await user.getIdToken().timeout(_timeout);
 
       final doc = await _db.collection('nfc_uids').doc(uid).get().timeout(_timeout);
       if (!doc.exists) {
-        return 'This card has not been enrolled. Ask your caregiver to set it up.';
+        return l.cardNotEnrolled;
       }
       final seniorId = doc.data()?['seniorId'] as String?;
-      if (seniorId == null) return 'Invalid card data. Ask your caregiver.';
+      if (seniorId == null) return l.invalidCardData;
 
       await _db
           .collection('seniors')
@@ -110,11 +112,11 @@ class AuthService {
       await prefs.setString(_seniorIdKey, seniorId);
       return null;
     } on TimeoutException {
-      return 'Connection timed out. Check your internet and try again.';
+      return l.connectionTimedOut;
     } on FirebaseException catch (e) {
-      return 'Something went wrong (${e.code}). Please try again.';
+      return l.errorWithCode(e.code);
     } catch (_) {
-      return 'Something went wrong. Please try again.';
+      return l.somethingWentWrong;
     }
   }
 

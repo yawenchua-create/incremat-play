@@ -2,6 +2,7 @@ import 'package:confetti/confetti.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 
 class EvolutionScreen extends StatefulWidget {
@@ -48,6 +49,7 @@ class _EvolutionScreenState extends State<EvolutionScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final species = widget.pet.species;
     final prevName = species?.stageName(widget.previousStage)
         ?? widget.previousStage.label;
@@ -84,14 +86,14 @@ class _EvolutionScreenState extends State<EvolutionScreen>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Amazing!',
+                        l.amazing,
                         style: AppTextStyles.displayLarge.copyWith(
                             color: AppColors.gold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        '$prevName evolved into $newName!',
+                        l.evolvedInto(prevName, newName),
                         style: AppTextStyles.bodyLarge,
                         textAlign: TextAlign.center,
                       ),
@@ -131,7 +133,7 @@ class _EvolutionScreenState extends State<EvolutionScreen>
                       const SizedBox(height: 52),
                       ElevatedButton(
                         onPressed: () => Navigator.of(context).pop(),
-                        child: Text('Wonderful!',
+                        child: Text(l.wonderful,
                             style: AppTextStyles.buttonText),
                       ),
                     ],

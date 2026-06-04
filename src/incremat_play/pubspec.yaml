@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
 
   # Firebase
   firebase_core: ^3.6.0
@@ -30,7 +32,7 @@ dependencies:
   nfc_manager: ^3.3.0
 
   # Utils
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.4.2
 
 dev_dependencies:

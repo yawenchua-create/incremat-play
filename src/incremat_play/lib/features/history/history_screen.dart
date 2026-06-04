@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/senior_provider.dart';
 
@@ -19,7 +20,7 @@ class HistoryScreen extends ConsumerWidget {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
-              child: Text('History',
+              child: Text(AppLocalizations.of(context).historyTitle,
                   style: AppTextStyles.displayMedium),
             ),
           ),
@@ -27,7 +28,7 @@ class HistoryScreen extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
               child: Text(
-                'Your companions\' growth journey',
+                AppLocalizations.of(context).historySubtitle,
                 style: AppTextStyles.bodyMedium.copyWith(
                     color: Theme.of(context)
                         .colorScheme
@@ -89,6 +90,7 @@ class _ExpEventTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
     final dateLabel =
         DateFormat('EEEE, MMMM d').format(event.date).toUpperCase();
@@ -103,17 +105,17 @@ class _ExpEventTile extends StatelessWidget {
     switch (event.type) {
       case HistoryEventType.eggReceived:
         accent = AppColors.gold;
-        title = 'Received a Mystery Egg';
-        subtitle = 'A new egg, ready to hatch!';
+        title = l.receivedMysteryEgg;
+        subtitle = l.newEggReadyToHatch;
       case HistoryEventType.hatched:
         accent = AppColors.gold;
         final babyName =
-            petSpecies?.stageName(PetStage.baby) ?? 'a new companion';
-        title = 'Hatched into $babyName!';
+            petSpecies?.stageName(PetStage.baby) ?? l.aNewCompanion;
+        title = l.hatchedInto(babyName);
         subtitle = petSpecies?.label;
       case HistoryEventType.exp:
         accent = AppColors.sageGreen;
-        title = '+${event.amount} EXP — Daily Goal Met';
+        title = l.expDailyGoalMet(event.amount);
         subtitle = null;
     }
 
@@ -225,8 +227,8 @@ class _ExpEventTile extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Text(
-                                'Evolved to '
-                                '${petSpecies?.stageName(event.stageAfter) ?? event.stageAfter.label}!',
+                                l.evolvedTo(petSpecies?.stageName(event.stageAfter) ??
+                                    event.stageAfter.label),
                                 style: AppTextStyles.caption.copyWith(
                                   color: AppColors.gold,
                                   fontWeight: FontWeight.w600,
@@ -284,11 +286,11 @@ class _EmptyHistory extends StatelessWidget {
                 size: 56,
                 color: scheme.onSurface.withValues(alpha: 0.2)),
             const SizedBox(height: 16),
-            Text('No EXP events yet',
+            Text(AppLocalizations.of(context).noExpEvents,
                 style: AppTextStyles.headlineSmall),
             const SizedBox(height: 8),
             Text(
-              'When your companion gains EXP,\nit will appear here.',
+              AppLocalizations.of(context).noExpEventsSubtitle,
               style: AppTextStyles.bodySmall.copyWith(
                   color: scheme.onSurface.withValues(alpha: 0.6)),
               textAlign: TextAlign.center,

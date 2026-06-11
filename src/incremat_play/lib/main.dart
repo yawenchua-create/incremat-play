@@ -88,19 +88,13 @@ class _AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authAsync = ref.watch(authStateProvider);
+    // Gate purely on the saved senior ID. seniorIdProvider guarantees a Firebase
+    // user exists when an ID is present, so we don't need to wait on the
+    // authStateChanges() stream — waiting on it was what forced a second login.
     final seniorIdAsync = ref.watch(seniorIdProvider);
 
-    return authAsync.when(
-      data: (user) {
-        if (user == null) return const LoginScreen();
-        return seniorIdAsync.when(
-          data: (id) =>
-              id == null ? const LoginScreen() : const HomeScreen(),
-          loading: () => const _SplashScreen(),
-          error: (_, _) => const LoginScreen(),
-        );
-      },
+    return seniorIdAsync.when(
+      data: (id) => id == null ? const LoginScreen() : const HomeScreen(),
       loading: () => const _SplashScreen(),
       error: (_, _) => const LoginScreen(),
     );

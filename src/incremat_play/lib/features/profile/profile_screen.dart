@@ -201,6 +201,9 @@ class ProfileScreen extends ConsumerWidget {
     );
     if (confirmed == true) {
       await ref.read(authServiceProvider).signOut();
+      // The gate watches seniorIdProvider only — re-read it so it returns null
+      // and routes back to the login screen.
+      ref.invalidate(seniorIdProvider);
     }
   }
 }

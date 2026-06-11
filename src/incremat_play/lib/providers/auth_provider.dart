@@ -8,16 +8,18 @@ final authStateProvider = StreamProvider<User?>(
   (ref) => ref.watch(authServiceProvider).authStateChanges,
 );
 
-// Reads the saved senior ID from SharedPreferences only.
-// Does NOT watch authStateProvider — that caused a race where signInAnonymously()
-// fired authStateChanges before SharedPreferences was written, returning null
-// mid-login and forcing a second attempt.
-// This provider is invalidated explicitly after login and sign-out.
+// The single source of truth for "is the user logged in". Reads the saved
+// senior ID from SharedPreferences — NOT from authStateChanges. The auth stream
+// emits a microtask *after* signInAnonymously() resolves, so gating on it forced
+// a second login attempt. By gating only on this provider (invalidated right
+// after login/sign-out) the transition is deterministic and happens on the
+// first try. When a senior is saved we also guarantee a Firebase user exists so
+// Firestore reads stay authenticated.
 final seniorIdProvider = FutureProvider<String?>((ref) async {
   final authService = ref.read(authServiceProvider);
   final id = await authService.getSavedSeniorId();
-  if (id != null) {
-    await authService.ensureClaimed(id);
-  }
+  if (id == null) return null;
+  await authService.ensureSignedIn();
+  await authService.ensureClaimed(id);
   return id;
 });

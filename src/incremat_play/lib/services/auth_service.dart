@@ -120,6 +120,20 @@ class AuthService {
     }
   }
 
+  /// Guarantees there is a Firebase user before the app gates into Home.
+  /// Anonymous sessions normally persist across launches, but if one was lost
+  /// (data cleared, token wipe) this re-establishes one so Firestore reads stay
+  /// authenticated. Best-effort; never throws.
+  Future<void> ensureSignedIn() async {
+    if (_auth.currentUser != null) return;
+    try {
+      await _auth.signInAnonymously().timeout(_timeout);
+      await _auth.currentUser?.getIdToken().timeout(_timeout);
+    } catch (_) {
+      // Offline / rules — let downstream reads surface the problem.
+    }
+  }
+
   /// Re-stamps the current uid onto the senior document. Anonymous uids can
   /// drift (token refresh, partial data clear), leaving seniorUserId pointing
   /// at a stale uid — which makes Firestore rules deny access to the pets /

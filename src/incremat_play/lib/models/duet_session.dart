@@ -1,8 +1,20 @@
-/// A shared Live Duet lobby, stored at duets/{code}. Holds only the two
-/// participants' senior IDs / names / goals — never any login credential — so
-/// the code is safe to share just to pair up.
+/// How a paired session is scored.
+/// - [coop]: both players' reps add into one shared meter (teamwork).
+/// - [versus]: players race head-to-head; first to their goal wins.
+enum DuetMode {
+  coop,
+  versus;
+
+  static DuetMode fromName(String? name) =>
+      DuetMode.values.where((m) => m.name == name).firstOrNull ?? DuetMode.coop;
+}
+
+/// A shared lobby, stored at duets/{code}. Holds only the two participants'
+/// senior IDs / names / goals / mode — never any login credential — so the code
+/// is safe to share just to pair up.
 class DuetSession {
   final String code;
+  final DuetMode mode;
   final String hostId;
   final String hostName;
   final int hostGoal;
@@ -12,6 +24,7 @@ class DuetSession {
 
   const DuetSession({
     required this.code,
+    required this.mode,
     required this.hostId,
     required this.hostName,
     required this.hostGoal,
@@ -25,6 +38,7 @@ class DuetSession {
   factory DuetSession.fromMap(String code, Map<String, dynamic> m) =>
       DuetSession(
         code: code,
+        mode: DuetMode.fromName(m['mode'] as String?),
         hostId: m['hostId'] as String? ?? '',
         hostName: m['hostName'] as String? ?? 'Host',
         hostGoal: (m['hostGoal'] as num?)?.toInt() ?? 25,

@@ -21,11 +21,13 @@ class SeniorService {
         6, (_) => _codeAlphabet[r.nextInt(_codeAlphabet.length)]).join();
   }
 
-  /// Creates a new duet lobby hosted by this senior and returns its share code.
+  /// Creates a new lobby hosted by this senior and returns its share code.
+  /// [mode] selects cooperative (combined meter) or versus (head-to-head race).
   Future<String> createDuet({
     required String seniorId,
     required String name,
     required int goal,
+    DuetMode mode = DuetMode.coop,
   }) async {
     var code = _genDuetCode();
     // A couple of collision retries — the space is ~10^9 so this is ample.
@@ -34,6 +36,7 @@ class SeniorService {
       code = _genDuetCode();
     }
     await _duets.doc(code).set({
+      'mode': mode.name,
       'hostId': seniorId,
       'hostName': name,
       'hostGoal': goal,
@@ -91,6 +94,28 @@ class SeniorService {
         }, SetOptions(merge: true));
       }
     } catch (_) {}
+  }
+
+  /// Mirrors the live rep count this device is reading straight from the mat
+  /// up to Firestore, so a remote caregiver and competitive/duet partner can
+  /// still see it. Best-effort; the doc auto-expires from `isLive` after 5 min
+  /// of silence so we never need an explicit clear that could race the
+  /// caregiver app's own writes.
+  Future<void> publishLive(String seniorId, int reps) async {
+    try {
+      await _db
+          .collection('seniors')
+          .doc(seniorId)
+          .collection('live')
+          .doc('current')
+          .set({
+        'active': true,
+        'repCount': reps,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      }, SetOptions(merge: true));
+    } catch (_) {
+      // Offline / rules — local BLE view keeps working regardless.
+    }
   }
 
   /// Live (in-progress) session published by the caregiver app while the

@@ -9,8 +9,10 @@ import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../models/senior.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/mat_provider.dart';
 import '../../providers/senior_provider.dart';
 import '../../services/game_service.dart';
+import '../../services/mat_ble_service.dart';
 import '../celebration/egg_award_screen.dart';
 import '../duet/duet_screen.dart';
 import '../evolution/evolution_screen.dart';
@@ -255,9 +257,12 @@ class _PlayTab extends ConsumerWidget {
     final senior = seniorAsync.valueOrNull;
     final sessions = sessionsAsync.valueOrNull ?? [];
 
-    // Live reps from the mat (published by the caregiver app in real time).
-    final live = ref.watch(liveSessionProvider).valueOrNull;
-    final liveReps = (live?.isLive ?? false) ? live!.repCount : 0;
+    // Live reps — read straight from the mat over Bluetooth when connected
+    // (instant), otherwise from the Firebase mirror. Watching liveMirrorProvider
+    // keeps BLE→Firebase mirroring active so remote viewers stay in sync.
+    ref.watch(liveMirrorProvider);
+    final myLive = ref.watch(myLiveProvider);
+    final liveReps = myLive.live ? myLive.reps : 0;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final scheme = Theme.of(context).colorScheme;
@@ -321,6 +326,9 @@ class _PlayTab extends ConsumerWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                // Mat Bluetooth connection — tap to link for instant live reps.
+                const _MatStatusChip(),
                 const SizedBox(height: 24),
                 // Weekly progress + today's goal combined card
                 if (senior != null)
@@ -371,6 +379,96 @@ class _PlayTab extends ConsumerWidget {
 }
 
 // ── Live Duet entry button ───────────────────────────────────────────────────
+
+/// A compact pill showing the mat's Bluetooth connection. Tap to scan/connect
+/// (or retry). When connected, reps stream straight from the device.
+class _MatStatusChip extends ConsumerWidget {
+  const _MatStatusChip();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final state =
+        ref.watch(matStateProvider).valueOrNull ?? MatConnState.disconnected;
+
+    late final IconData icon;
+    late final String label;
+    late final Color color;
+    var busy = false;
+    switch (state) {
+      case MatConnState.connected:
+        icon = Icons.bluetooth_connected;
+        label = l.matConnected;
+        color = AppColors.sageGreen;
+      case MatConnState.scanning:
+        icon = Icons.bluetooth_searching;
+        label = l.matScanning;
+        color = AppColors.sageGreen;
+        busy = true;
+      case MatConnState.connecting:
+        icon = Icons.bluetooth_searching;
+        label = l.matConnecting;
+        color = AppColors.sageGreen;
+        busy = true;
+      case MatConnState.notFound:
+        icon = Icons.bluetooth_disabled;
+        label = l.matNotFound;
+        color = AppColors.terracotta;
+      case MatConnState.disconnected:
+        icon = Icons.bluetooth;
+        label = l.matConnect;
+        color = scheme.onSurface.withValues(alpha: 0.7);
+    }
+
+    final tappable = !busy && state != MatConnState.connected;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: tappable
+              ? () => ref.read(matBleServiceProvider).connect()
+              : null,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+            decoration: BoxDecoration(
+              color: scheme.surface.withValues(alpha: 0.82),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: color.withValues(alpha: 0.45)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (busy)
+                  SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: color),
+                  )
+                else
+                  Icon(icon, size: 16, color: color),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(color: color, fontWeight: FontWeight.w700),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
 class _DuetButton extends StatelessWidget {
   @override

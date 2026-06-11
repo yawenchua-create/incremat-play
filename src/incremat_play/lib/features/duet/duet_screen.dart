@@ -6,6 +6,7 @@ import '../../core/constants/app_text_styles.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/duet_session.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/mat_provider.dart';
 import '../../providers/senior_provider.dart';
 
 /// Live Duet — two people exercise at the same time and their live rep counts
@@ -22,6 +23,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
   final _joinCtrl = TextEditingController();
   bool _busy = false;
   String? _error;
+  DuetMode _mode = DuetMode.coop;
 
   @override
   void dispose() {
@@ -45,7 +47,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     });
     try {
       final code = await ref.read(seniorServiceProvider).createDuet(
-          seniorId: me.id, name: me.name, goal: me.goal);
+          seniorId: me.id, name: me.name, goal: me.goal, mode: _mode);
       await ref.read(duetCodeProvider.notifier).setCode(code);
     } catch (_) {
       if (mounted) {
@@ -142,7 +144,36 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
                 .copyWith(color: scheme.onSurface.withValues(alpha: 0.6)),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          // Mode picker — team up (combined) or compete (head-to-head).
+          Text(l.chooseMode,
+              style: AppTextStyles.labelLarge
+                  .copyWith(color: scheme.onSurface.withValues(alpha: 0.7))),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _ModeCard(
+                  icon: Icons.group_rounded,
+                  title: l.modeCoop,
+                  subtitle: l.modeCoopDesc,
+                  selected: _mode == DuetMode.coop,
+                  onTap: () => setState(() => _mode = DuetMode.coop),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _ModeCard(
+                  icon: Icons.emoji_events_rounded,
+                  title: l.modeVersus,
+                  subtitle: l.modeVersusDesc,
+                  selected: _mode == DuetMode.versus,
+                  onTap: () => setState(() => _mode = DuetMode.versus),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
           SizedBox(
             height: 56,
             child: ElevatedButton.icon(
@@ -154,7 +185,8 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
                       child: CircularProgressIndicator(
                           strokeWidth: 2.5, color: Colors.white))
                   : const Icon(Icons.add_rounded, color: Colors.white),
-              label: Text(l.createDuet, style: AppTextStyles.buttonText),
+              label: Text(_mode == DuetMode.versus ? l.createMatch : l.createDuet,
+                  style: AppTextStyles.buttonText),
             ),
           ),
           const SizedBox(height: 20),
@@ -223,6 +255,14 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
 
         if (partnerId == null) {
           return _waitingView(code, session);
+        }
+        if (session.mode == DuetMode.versus) {
+          return _versusView(
+            session: session,
+            partnerId: partnerId,
+            partnerName: partnerName ?? l.partner,
+            partnerGoal: partnerGoal ?? 25,
+          );
         }
         return _liveView(
           session: session,
@@ -305,9 +345,11 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     final myName = me?.name ?? l.youWord;
     final myGoal = me?.dailyRepGoal ?? 25;
 
-    final myLive = ref.watch(liveSessionProvider).valueOrNull;
+    // My reps come from the unified provider (instant BLE when the mat is
+    // connected, Firebase otherwise); the partner is always remote.
+    final myLive = ref.watch(myLiveProvider);
     final partnerLive = ref.watch(partnerLiveProvider(partnerId)).valueOrNull;
-    final myReps = (myLive?.isLive ?? false) ? myLive!.repCount : 0;
+    final myReps = myLive.live ? myLive.reps : 0;
     final partnerReps =
         (partnerLive?.isLive ?? false) ? partnerLive!.repCount : 0;
     final total = myReps + partnerReps;
@@ -366,7 +408,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
           _ParticipantCard(
             name: myName,
             reps: myReps,
-            live: myLive?.isLive ?? false,
+            live: myLive.live,
             isYou: true,
           ),
           const SizedBox(height: 12),
@@ -382,6 +424,122 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             icon: const Icon(Icons.logout_rounded,
                 size: 20, color: AppColors.terracotta),
             label: Text(l.endDuet,
+                style: AppTextStyles.labelLarge
+                    .copyWith(color: AppColors.terracotta)),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+              side:
+                  BorderSide(color: AppColors.terracotta.withValues(alpha: 0.4)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Competitive (versus) ─────────────────────────────────────────────────────
+
+  Widget _versusView({
+    required DuetSession session,
+    required String partnerId,
+    required String partnerName,
+    required int partnerGoal,
+  }) {
+    final l = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final me = ref.watch(seniorProvider).valueOrNull;
+    final myName = me?.name ?? l.youWord;
+    final myGoal = (me?.dailyRepGoal ?? 25).clamp(1, 100000);
+
+    final myLive = ref.watch(myLiveProvider);
+    final partnerLive = ref.watch(partnerLiveProvider(partnerId)).valueOrNull;
+    final myReps = myLive.live ? myLive.reps : 0;
+    final partnerReps =
+        (partnerLive?.isLive ?? false) ? partnerLive!.repCount : 0;
+
+    final myProgress = (myReps / myGoal).clamp(0.0, 1.0);
+    final partnerProgress = (partnerReps / partnerGoal).clamp(0.0, 1.0);
+    final iFinished = myReps >= myGoal;
+    final partnerFinished = partnerReps >= partnerGoal;
+
+    // Banner: a winner once someone reaches their goal, otherwise who's ahead.
+    final String banner;
+    final Color bannerColor;
+    if (iFinished || partnerFinished) {
+      if (iFinished && partnerFinished) {
+        banner = l.itsATie;
+        bannerColor = AppColors.gold;
+      } else if (iFinished) {
+        banner = l.youWon;
+        bannerColor = AppColors.sageGreen;
+      } else {
+        banner = l.partnerWon(partnerName);
+        bannerColor = AppColors.terracotta;
+      }
+    } else if (myProgress > partnerProgress) {
+      banner = l.youLead;
+      bannerColor = AppColors.sageGreen;
+    } else if (partnerProgress > myProgress) {
+      banner = l.partnerLeads;
+      bannerColor = AppColors.terracotta;
+    } else {
+      banner = l.neckAndNeck;
+      bannerColor = AppColors.gold;
+    }
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+            decoration: BoxDecoration(
+              color: bannerColor.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: bannerColor.withValues(alpha: 0.4)),
+            ),
+            child: Column(
+              children: [
+                Text(l.raceToGoal,
+                    style: AppTextStyles.caption.copyWith(
+                        color: scheme.onSurface.withValues(alpha: 0.6))),
+                const SizedBox(height: 4),
+                Text(banner,
+                    style: AppTextStyles.headlineSmall
+                        .copyWith(color: bannerColor),
+                    textAlign: TextAlign.center),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+          _RacerCard(
+            name: l.nameYou(myName),
+            reps: myReps,
+            goal: myGoal,
+            progress: myProgress,
+            live: myLive.live,
+            finished: iFinished,
+            color: AppColors.sageGreen,
+            percentLabel: l.percentOfGoal((myProgress * 100).round()),
+          ),
+          const SizedBox(height: 12),
+          _RacerCard(
+            name: partnerName,
+            reps: partnerReps,
+            goal: partnerGoal,
+            progress: partnerProgress,
+            live: partnerLive?.isLive ?? false,
+            finished: partnerFinished,
+            color: AppColors.terracotta,
+            percentLabel: l.percentOfGoal((partnerProgress * 100).round()),
+          ),
+          const SizedBox(height: 28),
+          OutlinedButton.icon(
+            onPressed: () => _leave(session),
+            icon: const Icon(Icons.logout_rounded,
+                size: 20, color: AppColors.terracotta),
+            label: Text(l.endMatch,
                 style: AppTextStyles.labelLarge
                     .copyWith(color: AppColors.terracotta)),
             style: OutlinedButton.styleFrom(
@@ -530,6 +688,151 @@ class _ParticipantCard extends StatelessWidget {
                       .copyWith(color: live ? AppColors.sageGreen : null)),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Selectable card for picking coop vs versus mode in the lobby.
+class _ModeCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ModeCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.sageGreen.withValues(alpha: 0.14)
+                : scheme.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: selected
+                  ? AppColors.sageGreen
+                  : scheme.onSurface.withValues(alpha: 0.12),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Icon(icon,
+                  size: 34,
+                  color: selected
+                      ? AppColors.sageGreen
+                      : scheme.onSurface.withValues(alpha: 0.5)),
+              const SizedBox(height: 10),
+              Text(title,
+                  style: AppTextStyles.labelLarge.copyWith(
+                      color: selected ? AppColors.forest : null),
+                  textAlign: TextAlign.center),
+              const SizedBox(height: 4),
+              Text(subtitle,
+                  style: AppTextStyles.caption.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.55)),
+                  textAlign: TextAlign.center),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A competitor's progress card in versus mode: name, live reps over their own
+/// goal, a progress bar, and a trophy once they finish.
+class _RacerCard extends StatelessWidget {
+  final String name;
+  final int reps;
+  final int goal;
+  final double progress;
+  final bool live;
+  final bool finished;
+  final Color color;
+  final String percentLabel;
+
+  const _RacerCard({
+    required this.name,
+    required this.reps,
+    required this.goal,
+    required this.progress,
+    required this.live,
+    required this.finished,
+    required this.color,
+    required this.percentLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: finished
+              ? color
+              : (live
+                  ? color.withValues(alpha: 0.4)
+                  : scheme.onSurface.withValues(alpha: 0.08)),
+          width: finished ? 2 : (live ? 1.5 : 1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(name,
+                    style: AppTextStyles.labelLarge,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              if (finished)
+                Icon(Icons.emoji_events_rounded, size: 22, color: color),
+              const SizedBox(width: 8),
+              Text('$reps',
+                  style: AppTextStyles.statMedium.copyWith(color: color)),
+              Text(' / $goal',
+                  style: AppTextStyles.caption.copyWith(
+                      color: scheme.onSurface.withValues(alpha: 0.5))),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: progress,
+              minHeight: 10,
+              backgroundColor: scheme.onSurface.withValues(alpha: 0.1),
+              valueColor: AlwaysStoppedAnimation(color),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(percentLabel,
+              style: AppTextStyles.caption.copyWith(
+                  color: scheme.onSurface.withValues(alpha: 0.55))),
         ],
       ),
     );

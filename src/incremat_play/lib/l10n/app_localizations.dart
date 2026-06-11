@@ -200,6 +200,33 @@ class AppLocalizations {
   String nameYou(String name) => _t('$name (you)', '$name（您）');
   String get exercisingNow => _t('Exercising now', '正在锻炼');
   String get waitingToStart => _t('Waiting to start…', '等待开始…');
+  // Competitive play (versus mode)
+  String get chooseMode => _t('Choose a mode', '选择模式');
+  String get modeCoop => _t('Team Up', '组队');
+  String get modeCoopDesc =>
+      _t('Add your reps together', '将你们的次数加在一起');
+  String get modeVersus => _t('Compete', '比拼');
+  String get modeVersusDesc =>
+      _t('Race to your goal — first one wins', '冲向目标 — 先到者胜');
+  String get createMatch => _t('Create a Match', '创建比赛');
+  String get enterMatchCode => _t('Enter match code', '输入比赛代码');
+  String get joinMatch => _t('Join Match', '加入比赛');
+  String get raceToGoal => _t('Race to your goal!', '冲向你的目标！');
+  String get youWon => _t('You won! 🏆', '你赢了！🏆');
+  String partnerWon(String name) => _t('$name won! 🏆', '$name 赢了！🏆');
+  String get itsATie => _t("It's a tie! 🤝", '平局！🤝');
+  String get youLead => _t('You\'re ahead!', '您领先！');
+  String get partnerLeads => _t('Partner\'s ahead', '伙伴领先');
+  String get neckAndNeck => _t('Neck and neck!', '不相上下！');
+  String percentOfGoal(int pct) => _t('$pct% of goal', '目标的 $pct%');
+  String get endMatch => _t('End Match', '结束比赛');
+  // Mat Bluetooth connection
+  String get matConnect => _t('Connect mat', '连接锻炼垫');
+  String get matConnected => _t('Mat connected', '锻炼垫已连接');
+  String get matScanning => _t('Looking for mat…', '正在查找锻炼垫…');
+  String get matConnecting => _t('Connecting…', '正在连接…');
+  String get matNotFound =>
+      _t('Mat not found — tap to retry', '未找到锻炼垫 — 点按重试');
 
   // ── Profile ─────────────────────────────────────────────────────────────────
   String get profileTitle => _t('Profile', '我的');

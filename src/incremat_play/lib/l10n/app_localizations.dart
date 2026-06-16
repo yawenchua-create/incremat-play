@@ -37,6 +37,28 @@ class AppLocalizations {
   // ── Common ──────────────────────────────────────────────────────────────────
   String get or => _t('or', '或');
 
+  // ── Welcome guide (first login) ──────────────────────────────────────────────
+  String get obSkip => _t('Skip', '跳过');
+  String get obNext => _t('Next', '下一步');
+  String get obStart => _t("Let's start!", '开始吧！');
+  String get obWelcomeTitle => _t('Welcome!', '欢迎！');
+  String get obWelcomeBody =>
+      _t("Let's move a little every day. It's easy and fun.",
+          '每天动一动，简单又有趣。');
+  String get obMoveTitle => _t('Stand up, sit down', '起立，坐下');
+  String get obMoveBody => _t(
+      'On your mat, stand up and sit down. The app counts each one for you.',
+      '在垫子上起立再坐下。应用会自动为您计数。');
+  String get obPetTitle => _t('Grow your friend', '养成您的伙伴');
+  String get obPetBody => _t(
+      'Each day you exercise, your little companion grows. Watch it hatch and grow!',
+      '您每天锻炼，小伙伴就会长大。看着它孵化、成长！');
+  String get obGoalTitle => _t('Reach your daily goal', '达成每日目标');
+  String get obGoalBody => _t(
+      'The green ring on the home screen shows how close you are. You can do it!',
+      '主页上的绿色圆环显示您的进度。您一定可以做到！');
+  String get howToUseApp => _t('How to use the app', '如何使用应用');
+
   // ── Login ───────────────────────────────────────────────────────────────────
   String get appTagline => _t('Your daily exercise companion', '您的每日锻炼伙伴');
   String get enterPlayCode => _t('Enter your play code', '输入您的 Play 代码');
@@ -91,6 +113,11 @@ class AppLocalizations {
       _t('All 7 goals met this week — amazing!', '本周 7 个目标全部达成 — 太棒了！');
   String goalsMetThisWeek(int n) =>
       _t('$n of 7 goals met this week', '本周已达成 $n / 7 个目标');
+  // Weekly goal = the caregiver-set "Weekly Reward Days" (consistencyThreshold).
+  String weeklyGoalProgress(int done, int goal) =>
+      _t('$done of $goal days this week', '本周已完成 $done / $goal 天');
+  String weeklyGoalReached(int goal) => _t(
+      'Weekly goal reached — $goal days! 🎉', '每周目标达成 — $goal 天！🎉');
   String get todaysGoalComplete => _t("Today's Goal — Complete!", '今日目标 — 已完成！');
   String get todaysGoal => _t("Today's Goal", '今日目标');
   String get liveBadge => _t('LIVE', '实时');
@@ -188,6 +215,7 @@ class AppLocalizations {
   String get shareCodeWithPartner =>
       _t('Share this code with your partner', '将此代码分享给您的伙伴');
   String get duetCodeCopied => _t('Duet code copied', '二人组代码已复制');
+  String get tapToCopy => _t('Tap to copy', '点按复制');
   String get waitingForPartner =>
       _t('Waiting for your partner to join…', '正在等待伙伴加入…');
   String get youWord => _t('You', '您');
@@ -220,6 +248,18 @@ class AppLocalizations {
   String get neckAndNeck => _t('Neck and neck!', '不相上下！');
   String percentOfGoal(int pct) => _t('$pct% of goal', '目标的 $pct%');
   String get endMatch => _t('End Match', '结束比赛');
+  // Duet / match celebration
+  String get duetGoalReachedTitle => _t('Goal reached! 🎉', '目标达成！🎉');
+  String get duetGoalReachedBody => _t(
+      'You did it together. Amazing teamwork!',
+      '你们一起做到了。团队合作太棒了！');
+  String get duetYouWonBody =>
+      _t('You reached your goal first. Fantastic!', '您率先达成目标。太棒了！');
+  String duetPartnerWonBody(String name) => _t(
+      '$name reached the goal first. Great effort — keep going!',
+      '$name 率先达成目标。再接再厉！');
+  String get duetTieBody =>
+      _t('You both reached your goals together!', '你们同时达成了目标！');
   // Mat Bluetooth connection
   String get matConnect => _t('Connect mat', '连接锻炼垫');
   String get matConnected => _t('Mat connected', '锻炼垫已连接');

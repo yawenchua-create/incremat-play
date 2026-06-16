@@ -595,9 +595,13 @@ class _WeeklyProgressPath extends StatelessWidget {
       cursor = cursor.subtract(const Duration(days: 1));
     }
 
-    final summaryText = completedDays == 7
-        ? l.allGoalsMet
-        : l.goalsMetThisWeek(completedDays);
+    // Weekly goal = the caregiver-set "Weekly Reward Days" (days/week the senior
+    // should hit their daily goal), not a hardcoded 7.
+    final weeklyGoal = senior.consistencyThreshold.clamp(1, 7);
+    final weeklyGoalMet = completedDays >= weeklyGoal;
+    final summaryText = weeklyGoalMet
+        ? l.weeklyGoalReached(weeklyGoal)
+        : l.weeklyGoalProgress(completedDays, weeklyGoal);
 
     return Container(
       decoration: BoxDecoration(
@@ -656,7 +660,7 @@ class _WeeklyProgressPath extends StatelessWidget {
           Text(
             summaryText,
             style: AppTextStyles.bodySmall.copyWith(
-              color: completedDays >= 4
+              color: weeklyGoalMet
                   ? AppColors.sageGreen
                   : scheme.onSurface.withValues(alpha: 0.55),
             ),

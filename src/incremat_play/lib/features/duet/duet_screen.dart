@@ -8,6 +8,7 @@ import '../../models/duet_session.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/mat_provider.dart';
 import '../../providers/senior_provider.dart';
+import '../celebration/duet_celebration_screen.dart';
 
 /// Live Duet — two people exercise at the same time and their live rep counts
 /// add up into one shared meter, in real time. Pairing uses a throwaway "duet
@@ -24,11 +25,36 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
   bool _busy = false;
   String? _error;
   DuetMode _mode = DuetMode.coop;
+  // Ensures the win / goal-reached celebration fires only once per session.
+  bool _celebrated = false;
 
   @override
   void dispose() {
     _joinCtrl.dispose();
     super.dispose();
+  }
+
+  /// Pushes the full-screen congratulations once, after the current frame.
+  void _celebrate({
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color accent,
+  }) {
+    if (_celebrated || !mounted) return;
+    _celebrated = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.of(context).push(MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => DuetCelebrationScreen(
+          title: title,
+          message: message,
+          icon: icon,
+          accent: accent,
+        ),
+      ));
+    });
   }
 
   ({String id, String name, int goal})? _me() {
@@ -44,6 +70,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _celebrated = false;
     });
     try {
       final code = await ref.read(seniorServiceProvider).createDuet(
@@ -66,6 +93,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     setState(() {
       _busy = true;
       _error = null;
+      _celebrated = false;
     });
     try {
       final err = await ref.read(seniorServiceProvider).joinDuet(
@@ -94,6 +122,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
           .leaveDuet(code, asHost: session.hostId == myId);
     }
     await ref.read(duetCodeProvider.notifier).setCode(null);
+    _celebrated = false;
   }
 
   @override
@@ -212,7 +241,12 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
             textCapitalization: TextCapitalization.characters,
             style: AppTextStyles.headlineSmall.copyWith(letterSpacing: 4),
             textAlign: TextAlign.center,
-            decoration: InputDecoration(hintText: l.enterDuetCode),
+            decoration: InputDecoration(
+              hintText: l.enterDuetCode,
+              // Offset the trailing letter-spacing so the centred code sits
+              // optically centred rather than shifted left.
+              contentPadding: const EdgeInsets.fromLTRB(24, 18, 20, 18),
+            ),
             onSubmitted: (_) => _join(),
           ),
           if (_error != null) ...[
@@ -294,6 +328,7 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
               );
             },
             child: Container(
+              width: double.infinity,
               padding:
                   const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
               decoration: BoxDecoration(
@@ -302,15 +337,31 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
                 border: Border.all(
                     color: AppColors.sageGreen.withValues(alpha: 0.4)),
               ),
-              child: Row(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(code,
-                      style: AppTextStyles.statLarge.copyWith(
-                          color: AppColors.forest, letterSpacing: 6)),
-                  const SizedBox(width: 12),
-                  const Icon(Icons.copy_rounded,
-                      size: 22, color: AppColors.sageGreen),
+                  // letterSpacing adds a trailing gap after the last glyph, so a
+                  // centred line reads left-of-centre; the left padding offsets it.
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: Text(code,
+                        textAlign: TextAlign.center,
+                        style: AppTextStyles.statLarge.copyWith(
+                            color: AppColors.forest, letterSpacing: 6)),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.copy_rounded,
+                          size: 20, color: AppColors.sageGreen),
+                      const SizedBox(width: 6),
+                      Text(l.tapToCopy,
+                          style: AppTextStyles.caption
+                              .copyWith(color: AppColors.sageGreen)),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -356,6 +407,15 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     final target = myGoal + partnerGoal;
     final progress = target > 0 ? (total / target).clamp(0.0, 1.0) : 0.0;
     final reached = target > 0 && total >= target;
+
+    if (reached) {
+      _celebrate(
+        title: l.duetGoalReachedTitle,
+        message: l.duetGoalReachedBody,
+        icon: Icons.celebration_rounded,
+        accent: AppColors.sageGreen,
+      );
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
@@ -485,6 +545,32 @@ class _DuetScreenState extends ConsumerState<DuetScreen> {
     } else {
       banner = l.neckAndNeck;
       bannerColor = AppColors.gold;
+    }
+
+    // Celebrate the finish once: a personal win, the partner's win, or a tie.
+    if (iFinished || partnerFinished) {
+      if (iFinished && partnerFinished) {
+        _celebrate(
+          title: l.itsATie,
+          message: l.duetTieBody,
+          icon: Icons.handshake_rounded,
+          accent: AppColors.gold,
+        );
+      } else if (iFinished) {
+        _celebrate(
+          title: l.youWon,
+          message: l.duetYouWonBody,
+          icon: Icons.emoji_events_rounded,
+          accent: AppColors.sageGreen,
+        );
+      } else {
+        _celebrate(
+          title: l.partnerWon(partnerName),
+          message: l.duetPartnerWonBody(partnerName),
+          icon: Icons.emoji_events_rounded,
+          accent: AppColors.gold,
+        );
+      }
     }
 
     return SingleChildScrollView(

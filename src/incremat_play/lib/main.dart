@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_theme.dart';
 import 'features/home/home_screen.dart';
 import 'features/login/login_screen.dart';
+import 'features/onboarding/onboarding_screen.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/accessibility_provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
+import 'providers/onboarding_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -94,9 +96,28 @@ class _AuthGate extends ConsumerWidget {
     final seniorIdAsync = ref.watch(seniorIdProvider);
 
     return seniorIdAsync.when(
-      data: (id) => id == null ? const LoginScreen() : const HomeScreen(),
+      data: (id) =>
+          id == null ? const LoginScreen() : _PostLoginGate(seniorId: id),
       loading: () => const _SplashScreen(),
       error: (_, _) => const LoginScreen(),
+    );
+  }
+}
+
+// Shows the welcome guide on the very first login for this senior, then Home.
+class _PostLoginGate extends ConsumerWidget {
+  final String seniorId;
+  const _PostLoginGate({required this.seniorId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final seen = ref.watch(onboardingSeenProvider(seniorId));
+    return seen.when(
+      data: (hasSeen) =>
+          hasSeen ? const HomeScreen() : OnboardingScreen(seniorId: seniorId),
+      // Wait for the quick prefs read so Home never flashes before the guide.
+      loading: () => const _SplashScreen(),
+      error: (_, _) => const HomeScreen(),
     );
   }
 }

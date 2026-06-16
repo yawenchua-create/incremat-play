@@ -24,6 +24,14 @@ class AppColors {
   static const Color hcText = Color(0xFF1A1A1A);
   static const Color hcCard = Color(0xFFF0EDE8);
 
+  // High-contrast accents — sageGreen only reaches ~3.3:1 against white/cream,
+  // which fails WCAG AAA (7:1). These replace it when high-contrast is on:
+  //   hcAccentLight: white-on-accent ~10:1, accent-on-card ~8.6:1.
+  //   hcAccentDark : used on dark backgrounds with espresso text (~9.6:1) and
+  //                  reads ~12.8:1 as accent text on near-black.
+  static const Color hcAccentLight = Color(0xFF134B37);
+  static const Color hcAccentDark = lightSage;
+
   // High-contrast dark
   static const Color hcDarkBackground = Color(0xFF050505);
   static const Color hcDarkText = Color(0xFFF5F5F5);

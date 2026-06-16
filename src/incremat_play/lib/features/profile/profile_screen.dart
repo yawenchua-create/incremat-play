@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/locale_provider.dart';
 import '../../providers/senior_provider.dart';
 import '../../services/pet_service.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -80,29 +81,12 @@ class ProfileScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _SettingCard(
               title: l.textSize,
-              child: Column(
-                children: [
-                  Slider(
-                    value: textScale,
-                    min: 0.9,
-                    max: 1.6,
-                    divisions: 7,
-                    activeColor: AppColors.sageGreen,
-                    onChanged: (v) => notifier.setTextScale(v),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text('A',
-                          style: AppTextStyles.bodySmall.copyWith(
-                              color: scheme.onSurface.withValues(alpha: 0.6))),
-                      Text(
-                        'A',
-                        style: AppTextStyles.bodyLarge.copyWith(fontSize: 24),
-                      ),
-                    ],
-                  ),
-                ],
+              // Stepper rather than a Slider: a slider needs a steady, precise
+              // drag, which tremor/weakness (sarcopenia) makes unreliable. Two
+              // large +/- targets give the same control with a single tap each.
+              child: _TextSizeStepper(
+                scale: textScale,
+                onChanged: notifier.setTextScale,
               ),
             ),
             const SizedBox(height: 12),
@@ -155,6 +139,26 @@ class ProfileScreen extends ConsumerWidget {
               const _DebugPanel(),
             ],
             const SizedBox(height: 28),
+            OutlinedButton.icon(
+              onPressed: () {
+                final id = ref.read(seniorIdProvider).valueOrNull;
+                if (id != null) {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => OnboardingScreen(seniorId: id),
+                  ));
+                }
+              },
+              icon: const Icon(Icons.help_outline_rounded, size: 20),
+              label: Text(l.howToUseApp,
+                  style: AppTextStyles.labelLarge
+                      .copyWith(color: scheme.primary)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.primary,
+                side: BorderSide(
+                    color: scheme.primary.withValues(alpha: 0.4)),
+              ),
+            ),
+            const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => _confirmSignOut(context, ref),
               icon: const Icon(Icons.logout, size: 20),
@@ -282,6 +286,94 @@ class _SettingCard extends StatelessWidget {
   }
 }
 
+/// Text-size control built from two large +/- buttons instead of a slider.
+/// Sliders demand a steady, precise drag; for users with tremor or muscle
+/// weakness (sarcopenia) that fails, so each step is a single tap on a
+/// 64x64 target (above the 60dp senior-friendly minimum).
+class _TextSizeStepper extends StatelessWidget {
+  final double scale;
+  final ValueChanged<double> onChanged;
+
+  const _TextSizeStepper({required this.scale, required this.onChanged});
+
+  static const double _min = 0.9;
+  static const double _max = 1.6;
+  static const double _step = 0.1;
+
+  double _rounded(double v) =>
+      ((v * 10).roundToDouble() / 10).clamp(_min, _max).toDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    final canDecrease = scale > _min + 0.001;
+    final canIncrease = scale < _max - 0.001;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        _StepButton(
+          label: 'A',
+          fontSize: 18,
+          enabled: canDecrease,
+          onTap: () => onChanged(_rounded(scale - _step)),
+        ),
+        Text(
+          '${(scale * 100).round()}%',
+          style: AppTextStyles.statMedium.copyWith(fontSize: 28),
+        ),
+        _StepButton(
+          label: 'A',
+          fontSize: 30,
+          enabled: canIncrease,
+          onTap: () => onChanged(_rounded(scale + _step)),
+        ),
+      ],
+    );
+  }
+}
+
+class _StepButton extends StatelessWidget {
+  final String label;
+  final double fontSize;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  const _StepButton({
+    required this.label,
+    required this.fontSize,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final fg = enabled
+        ? scheme.primary
+        : scheme.onSurface.withValues(alpha: 0.3);
+    return Material(
+      color: enabled
+          ? scheme.primary.withValues(alpha: 0.14)
+          : scheme.onSurface.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        borderRadius: BorderRadius.circular(16),
+        child: SizedBox(
+          width: 64,
+          height: 64,
+          child: Center(
+            child: Text(
+              label,
+              style: AppTextStyles.headlineLarge
+                  .copyWith(fontSize: fontSize, color: fg),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ThemeOption extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -297,17 +389,20 @@ class _ThemeOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = scheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 60),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.sageGreen.withValues(alpha: 0.14)
+              ? accent.withValues(alpha: 0.14)
               : Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.sageGreen : Colors.transparent,
+            color: selected ? accent : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -316,23 +411,17 @@ class _ThemeOption extends StatelessWidget {
             Icon(icon,
                 size: 20,
                 color: selected
-                    ? AppColors.sageGreen
-                    : Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withValues(alpha: 0.55)),
+                    ? accent
+                    : scheme.onSurface.withValues(alpha: 0.55)),
             const SizedBox(width: 12),
             Text(
               label,
               style: AppTextStyles.bodyMedium.copyWith(
-                color: selected
-                    ? AppColors.sageGreen
-                    : Theme.of(context).colorScheme.onSurface,
+                color: selected ? accent : scheme.onSurface,
               ),
             ),
             const Spacer(),
-            if (selected)
-              const Icon(Icons.check, size: 18, color: AppColors.sageGreen),
+            if (selected) Icon(Icons.check, size: 18, color: accent),
           ],
         ),
       ),
@@ -353,17 +442,21 @@ class _LangOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final accent = scheme.primary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 60),
+        alignment: Alignment.center,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
           color: selected
-              ? AppColors.sageGreen.withValues(alpha: 0.14)
+              ? accent.withValues(alpha: 0.14)
               : Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? AppColors.sageGreen : Colors.transparent,
+            color: selected ? accent : Colors.transparent,
             width: 1.5,
           ),
         ),
@@ -371,9 +464,7 @@ class _LangOption extends StatelessWidget {
           child: Text(
             label,
             style: AppTextStyles.bodyMedium.copyWith(
-              color: selected
-                  ? AppColors.sageGreen
-                  : Theme.of(context).colorScheme.onSurface,
+              color: selected ? accent : scheme.onSurface,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             ),
           ),

@@ -7,6 +7,7 @@ import 'package:nfc_manager/platform_tags.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/accessibility_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -108,6 +109,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final highContrast =
+        ref.watch(accessibilityProvider.select((s) => s.highContrast));
     final bgColor = Theme.of(context).scaffoldBackgroundColor;
     final topInset = MediaQuery.of(context).padding.top;
     return Scaffold(
@@ -233,14 +236,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   // Gradient "Get Started" button
                   _GradientButton(
                     onPressed: _isLoading ? null : _signIn,
+                    highContrast: highContrast,
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 22,
                             width: 22,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2.5, color: Colors.white),
+                                strokeWidth: 2.5, color: scheme.onPrimary),
                           )
-                        : Text(l.getStarted, style: AppTextStyles.buttonText),
+                        : Text(l.getStarted,
+                            style: AppTextStyles.buttonText
+                                .copyWith(color: scheme.onPrimary)),
                   ),
                   if (_nfcAvailable) ...[
                     const SizedBox(height: 16),
@@ -269,25 +275,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         onPressed:
                             (_isLoading || _nfcScanning) ? null : _scanNfc,
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.sageGreen,
+                          foregroundColor: scheme.primary,
                           side: BorderSide(
-                              color: AppColors.sageGreen.withValues(alpha: 0.5)),
+                              color: scheme.primary.withValues(alpha: 0.5)),
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(28)),
                         ),
                         icon: _nfcScanning
-                            ? const SizedBox(
+                            ? SizedBox(
                                 width: 18,
                                 height: 18,
                                 child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppColors.sageGreen),
+                                    color: scheme.primary),
                               )
                             : const Icon(Icons.nfc, size: 22),
                         label: Text(
                           _nfcScanning ? l.holdTagToPhone : l.tapNfcTag,
                           style: AppTextStyles.buttonText
-                              .copyWith(color: AppColors.sageGreen),
+                              .copyWith(color: scheme.primary),
                         ),
                       ),
                     ),
@@ -314,23 +320,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 class _GradientButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final Widget child;
-  const _GradientButton({required this.onPressed, required this.child});
+  // In high-contrast mode the sage->forest gradient's light end drops below
+  // AAA, so fall back to a solid AAA-grade accent fill instead.
+  final bool highContrast;
+  const _GradientButton({
+    required this.onPressed,
+    required this.child,
+    this.highContrast = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final disabled = onPressed == null;
+    final accent = Theme.of(context).colorScheme.primary;
     return Container(
       width: double.infinity,
       height: 60,
       decoration: BoxDecoration(
-        gradient: !disabled
+        gradient: (!disabled && !highContrast)
             ? const LinearGradient(
                 colors: [AppColors.sageGreen, AppColors.forest],
               )
             : null,
         color: disabled
             ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.12)
-            : null,
+            : (highContrast ? accent : null),
         borderRadius: BorderRadius.circular(28),
         boxShadow: !disabled
             ? [

@@ -7,6 +7,9 @@ class AppTheme {
     final bg = highContrast ? AppColors.hcBackground : AppColors.warmCream;
     final surface = highContrast ? AppColors.hcCard : AppColors.cardSurface;
     final onSurface = highContrast ? AppColors.hcText : AppColors.espresso;
+    // sageGreen fails AAA on light backgrounds; swap to a darker green in HC.
+    final accent = highContrast ? AppColors.hcAccentLight : AppColors.sageGreen;
+    const onAccent = Colors.white;
 
     final base = ThemeData.light(useMaterial3: true);
     final textTheme = base.textTheme
@@ -16,11 +19,11 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: bg,
       colorScheme: ColorScheme.light(
-        primary: AppColors.sageGreen,
+        primary: accent,
         secondary: AppColors.gold,
         surface: surface,
         error: AppColors.terracotta,
-        onPrimary: Colors.white,
+        onPrimary: onAccent,
         onSecondary: Colors.white,
         onSurface: onSurface,
         outline: highContrast ? onSurface : AppColors.lightSage,
@@ -39,8 +42,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.sageGreen,
-          foregroundColor: Colors.white,
+          backgroundColor: accent,
+          foregroundColor: onAccent,
           minimumSize: const Size(double.infinity, 60),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
@@ -53,13 +56,13 @@ class AppTheme {
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppColors.sageGreen,
+          foregroundColor: accent,
           minimumSize: const Size(double.infinity, 60),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
           ),
           side: BorderSide(
-            color: highContrast ? onSurface : AppColors.sageGreen,
+            color: highContrast ? onSurface : accent,
             width: highContrast ? 2 : 1,
           ),
           textStyle: GoogleFonts.montserrat(
@@ -85,7 +88,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.sageGreen, width: 2),
+          borderSide: BorderSide(color: accent, width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -113,7 +116,7 @@ class AppTheme {
             fontSize: 16,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             color: selected
-                ? AppColors.sageGreen
+                ? accent
                 : onSurface.withValues(alpha: 0.55),
           );
         }),
@@ -122,7 +125,7 @@ class AppTheme {
           return IconThemeData(
             size: 26,
             color: selected
-                ? AppColors.sageGreen
+                ? accent
                 : onSurface.withValues(alpha: 0.55),
           );
         }),
@@ -138,6 +141,10 @@ class AppTheme {
         highContrast ? AppColors.hcDarkCard : AppColors.darkCard;
     final onSurface =
         highContrast ? AppColors.hcDarkText : const Color(0xFFF0EBE8);
+    // On dark HC backgrounds a brighter green reads best; pair it with espresso
+    // text so labels on accent fills also clear AAA.
+    final accent = highContrast ? AppColors.hcAccentDark : AppColors.sageGreen;
+    final onAccent = highContrast ? AppColors.espresso : Colors.white;
 
     final base = ThemeData.dark(useMaterial3: true);
     final textTheme = base.textTheme
@@ -147,11 +154,11 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: bg,
       colorScheme: ColorScheme.dark(
-        primary: AppColors.sageGreen,
+        primary: accent,
         secondary: AppColors.gold,
         surface: surface,
         error: AppColors.terracotta,
-        onPrimary: Colors.white,
+        onPrimary: onAccent,
         onSecondary: Colors.white,
         onSurface: onSurface,
         outline: highContrast ? onSurface : AppColors.darkSubtle,
@@ -170,8 +177,8 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.sageGreen,
-          foregroundColor: Colors.white,
+          backgroundColor: accent,
+          foregroundColor: onAccent,
           minimumSize: const Size(double.infinity, 60),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(28),
@@ -199,7 +206,7 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: AppColors.sageGreen, width: 2),
+          borderSide: BorderSide(color: accent, width: 2),
         ),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -226,7 +233,7 @@ class AppTheme {
             fontSize: 16,
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             color: selected
-                ? AppColors.sageGreen
+                ? accent
                 : onSurface.withValues(alpha: 0.55),
           );
         }),
@@ -235,7 +242,7 @@ class AppTheme {
           return IconThemeData(
             size: 26,
             color: selected
-                ? AppColors.sageGreen
+                ? accent
                 : onSurface.withValues(alpha: 0.55),
           );
         }),

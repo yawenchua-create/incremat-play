@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+/// The Play app's typography. Key difference from the caregiver app: this uses
+/// the rounded, playful **Nunito** font (game energy for seniors) instead of
+/// Playfair+Montserrat, and the styles deliberately OMIT colour so the theme can
+/// recolour them for light/dark/high-contrast without redefining every style.
 // All styles omit color intentionally — color is inherited from the ambient
 // DefaultTextStyle, which the MaterialApp theme sets correctly for light/dark/
 // high-contrast modes. Only accent/secondary colors are set explicitly.

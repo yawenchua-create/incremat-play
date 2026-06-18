@@ -12,6 +12,10 @@ class EggAwardScreen extends StatefulWidget {
   State<EggAwardScreen> createState() => _EggAwardScreenState();
 }
 
+// `with TickerProviderStateMixin` provides the "ticker" that drives animations
+// (it fires once per screen frame). It's required whenever a State owns one or
+// more AnimationControllers — as the celebration screens do for their bounce/
+// confetti effects. (Use SingleTickerProviderStateMixin for exactly one.)
 class _EggAwardScreenState extends State<EggAwardScreen>
     with TickerProviderStateMixin {
   late final ConfettiController _confetti;

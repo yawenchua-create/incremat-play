@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 
+/// The Play app's palette — more saturated and vivid than the caregiver app's
+/// muted tones (it's the senior-facing "fun" layer). Note the extra colour sets:
+/// dark mode, HIGH-CONTRAST light/dark (for SS618 accessibility), and per-pet-
+/// stage colours. The theme (app_theme.dart) chooses between them at runtime.
 class AppColors {
   // Primary palette
   static const Color warmCream = Color(0xFFEFF8F4);

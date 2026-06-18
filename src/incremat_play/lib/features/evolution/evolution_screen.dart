@@ -5,6 +5,10 @@ import '../../core/constants/app_text_styles.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 
+/// Full-screen animation shown when a pet EVOLVES to its next stage (e.g. baby →
+/// young). Takes the evolved [pet] and its [previousStage] so it can animate the
+/// before→after artwork with confetti. Same celebration family as the egg-award
+/// and duet screens.
 class EvolutionScreen extends StatefulWidget {
   final Pet pet;
   final PetStage previousStage;

@@ -10,6 +10,9 @@ import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/senior_provider.dart';
 
+/// The egg-HATCHING sequence: the egg rocks, shakes, then plays a species reveal
+/// VIDEO (via the video_player package) before showing the new baby pet. The
+/// `_Phase` enum below is a little state machine driving those three stages.
 enum _Phase { rocking, shaking, revealed }
 
 // Background colour baked into the reveal videos. The hatching screen matches

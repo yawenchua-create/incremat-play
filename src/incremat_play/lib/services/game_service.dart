@@ -5,6 +5,12 @@ import 'consistency_service.dart';
 import 'pet_service.dart';
 import 'senior_service.dart';
 
+/// The gamification BRAIN. After a session is logged it decides what the senior
+/// earns: whether they hit the weekly consistency bar to be awarded an egg, and
+/// how EXP/evolution applies to their pet. It orchestrates the three lower-level
+/// services — ConsistencyService (the rules), PetService (pet data), and
+/// SeniorService (session data) — rather than touching Firestore for everything
+/// itself. This separation keeps the "what counts as progress" rules in one place.
 class GameService {
   final _petService = PetService();
   final _seniorService = SeniorService();

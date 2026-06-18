@@ -12,6 +12,10 @@ import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/onboarding_provider.dart';
 
+/// Entry point of the Play (senior-facing) app. Same shape as the caregiver
+/// app's main(): init bindings + Firebase, then runApp inside a ProviderScope.
+/// The extra step here LOCKS the app to portrait — seniors hold the phone one
+/// way, and a fixed orientation keeps the game UI predictable.
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();

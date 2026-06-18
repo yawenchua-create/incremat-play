@@ -1,8 +1,14 @@
 import '../models/pet.dart';
 import '../models/senior.dart';
 
+/// The RULES of the reward system, as pure static functions (no state, easy to
+/// test). It defines what an "ISO week" is and decides when a senior has earned
+/// an egg — i.e. met their daily goal on enough days this week and not already
+/// been awarded one for this week. GameService calls these to make decisions.
 class ConsistencyService {
   /// Returns the ISO week string for a given date, e.g. "2025-W22".
+  /// (ISO weeks run Mon–Sun and are numbered by the week's Thursday — that's the
+  /// fiddly date maths below; the result is a stable per-week key like "2025-W22".)
   static String isoWeek(DateTime date) {
     final thursday = date.subtract(Duration(days: date.weekday - 1))
         .add(const Duration(days: 3));

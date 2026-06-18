@@ -6,6 +6,9 @@ import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/senior_provider.dart';
 
+/// The SANCTUARY — a gallery of every pet the senior has hatched. Lets them
+/// browse their collection, see which species they've discovered, and pick the
+/// active pet. Read-only celebration of progress (the reward for consistency).
 class SanctuaryScreen extends ConsumerWidget {
   const SanctuaryScreen({super.key});
 

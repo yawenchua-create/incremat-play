@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/pet.dart';
 
+/// Data-access layer for pets and their EXP-event history (same repository
+/// pattern as the caregiver app's repositories). Pets live at
+/// `seniors/{id}/pets/{petId}` and milestone events at `.../expEvents`. Provides
+/// live `watch...` streams for the UI and one-off `get...` reads for logic.
 class PetService {
   final _db = FirebaseFirestore.instance;
 

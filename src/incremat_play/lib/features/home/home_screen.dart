@@ -16,6 +16,12 @@ import '../../services/mat_ble_service.dart';
 import '../celebration/egg_award_screen.dart';
 import '../duet/duet_screen.dart';
 import '../evolution/evolution_screen.dart';
+// ════════════════════════════════════════════════════════════════════════════
+// HOME — the senior's main play screen. Shows their pet, live rep count (read
+// straight off the mat via mat_provider), today's goal progress, and buttons to
+// exercise / start a duet / view the sanctuary. When a session is logged it calls
+// GameService, which may trigger the egg-award or evolution celebration screens.
+// ════════════════════════════════════════════════════════════════════════════
 import '../hatching/hatching_screen.dart';
 import '../history/history_screen.dart';
 import '../profile/profile_screen.dart';

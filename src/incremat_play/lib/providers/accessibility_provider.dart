@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Holds the senior's accessibility preferences — bigger text, light/dark mode,
+/// and high-contrast — which feed the theme and MediaQuery so the whole app
+/// adapts. Central to the senior-UX/SS618 requirement. Immutable state object
+/// (copyWith) managed by a Notifier further down, persisted in SharedPreferences.
 class AccessibilityState {
-  final double textScale;
-  final ThemeMode themeMode;
-  final bool highContrast;
+  final double textScale;      // multiplier on all font sizes (1.0 = normal)
+  final ThemeMode themeMode;   // light / dark
+  final bool highContrast;     // swaps in the high-contrast palette
 
   const AccessibilityState({
     this.textScale = 1.0,

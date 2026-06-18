@@ -8,9 +8,19 @@ import '../services/senior_service.dart';
 import '../services/pet_service.dart';
 import 'auth_provider.dart';
 
+// ════════════════════════════════════════════════════════════════════════════
+// The Play app's central STATE HUB (mirrors the caregiver app's senior_provider).
+// It exposes the logged-in senior, their pet, the live session, and duet state
+// as providers the screens watch. `seniorIdProvider` (in auth_provider) is the
+// root: most providers below `ref.watch` it and rebuild when the senior changes.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Shared service instances for the providers below.
 final seniorServiceProvider = Provider<SeniorService>((ref) => SeniorService());
 final petServiceProvider = Provider<PetService>((ref) => PetService());
 
+/// The live Senior document for whoever is signed in (null when none). Chains
+/// off seniorIdProvider: when the id is known, watch that senior's Firestore doc.
 final seniorProvider = StreamProvider<Senior?>((ref) {
   final idAsync = ref.watch(seniorIdProvider);
   return idAsync.when(

@@ -7,6 +7,9 @@ import '../../l10n/app_localizations.dart';
 import '../../models/pet.dart';
 import '../../providers/senior_provider.dart';
 
+/// A timeline of the senior's milestones — EXP gained, eggs received, hatchings,
+/// evolutions — read from the `expEvents` collection via expEventsProvider. A
+/// scrapbook of progress that makes the senior's effort feel rewarding.
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
 

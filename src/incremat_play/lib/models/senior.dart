@@ -1,8 +1,12 @@
+/// The Play app's view of a senior. It's a TRIMMED copy of the caregiver app's
+/// Senior — the senior app only reads what it needs (name, age, goal) and has no
+/// toMap/copyWith because it never WRITES the senior document; the caregiver app
+/// owns that. Both apps read the same `seniors/{id}` Firestore document.
 class Senior {
   final String id;
   final String name;
   final int age;
-  final int dailyRepGoal;
+  final int dailyRepGoal;            // the daily target the pet's EXP is paced to
   final int consistencyThreshold;
   final String? joinCode;
 

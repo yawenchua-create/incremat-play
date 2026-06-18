@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../constants/app_colors.dart';
 
+/// The Play app's theme. Unlike the caregiver theme, this one takes a
+/// `highContrast` flag and swaps in higher-contrast colours when on — a senior
+/// accessibility requirement (SS618). Each `final x = highContrast ? hc : normal`
+/// line below picks the accessible or standard colour for that role.
 class AppTheme {
   static ThemeData light({bool highContrast = false}) {
     final bg = highContrast ? AppColors.hcBackground : AppColors.warmCream;
     final surface = highContrast ? AppColors.hcCard : AppColors.cardSurface;
     final onSurface = highContrast ? AppColors.hcText : AppColors.espresso;
-    // sageGreen fails AAA on light backgrounds; swap to a darker green in HC.
+    // sageGreen fails AAA contrast on light backgrounds; swap to a darker green
+    // in high-contrast mode so text/icons remain legible for low-vision users.
     final accent = highContrast ? AppColors.hcAccentLight : AppColors.sageGreen;
     const onAccent = Colors.white;
 

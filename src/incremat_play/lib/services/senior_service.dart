@@ -6,13 +6,18 @@ import '../models/live_session.dart';
 import '../models/pet.dart';
 import '../models/senior.dart';
 
+/// Data-access layer for the Play app: reads the senior, their sessions and the
+/// live-session mirror, and manages DUET lobbies (the head-to-head/co-op pairing
+/// at `duets/{code}`). Note the duet code uses a secure random over an alphabet
+/// that omits look-alike characters — and is an EPHEMERAL pairing code, never the
+/// senior's login join code (a deliberate security boundary).
 class SeniorService {
   final _db = FirebaseFirestore.instance;
 
   CollectionReference<Map<String, dynamic>> get _duets =>
       _db.collection('duets');
 
-  // Avoids easily-confused characters (no O/0, I/1).
+  // Avoids easily-confused characters (no O/0, I/1) so codes are easy to read aloud.
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
   String _genDuetCode() {

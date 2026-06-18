@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>IncreMat — Technical Reference</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  * { box-sizing: border-box; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body {
+    font-family: "Segoe UI", Calibri, Arial, sans-serif;
+    color: #2A2424; font-size: 10.5pt; line-height: 1.5; margin: 0;
+  }
+  /* Brand palette: sage #2E9E78, cream #EFF8F4, espresso #2A2424, gold #D4912A */
+  h1, h2, h3, h4 { font-family: Georgia, "Times New Roman", serif; color: #1A6B52; line-height: 1.2; }
+  h1 { font-size: 30pt; margin: 0 0 4pt; }
+  h2 { font-size: 18pt; margin: 26pt 0 8pt; border-bottom: 2px solid #2E9E78; padding-bottom: 4pt; page-break-after: avoid; }
+  h3 { font-size: 13pt; margin: 16pt 0 5pt; color: #2E9E78; page-break-after: avoid; }
+  h4 { font-size: 11pt; margin: 12pt 0 3pt; color: #2A2424; }
+  p { margin: 5pt 0; }
+  code { font-family: "Consolas", "Courier New", monospace; background: #EFF8F4; color: #1A6B52; padding: 1px 4px; border-radius: 3px; font-size: 9.5pt; }
+  pre { background: #1F2A24; color: #E8F3EE; padding: 10pt 12pt; border-radius: 6px; font-family: "Consolas", monospace; font-size: 8.8pt; line-height: 1.45; overflow-x: auto; page-break-inside: avoid; }
+  pre code { background: none; color: inherit; padding: 0; }
+  .lead { font-size: 11.5pt; color: #4a4040; }
+  .tag { display: inline-block; background: #2E9E78; color: #fff; font-size: 8pt; padding: 2px 8px; border-radius: 10px; letter-spacing: .5px; text-transform: uppercase; }
+  .card { background: #EFF8F4; border-left: 4px solid #2E9E78; padding: 8pt 12pt; border-radius: 4px; margin: 8pt 0; page-break-inside: avoid; }
+  .note { background: #FBF3E2; border-left: 4px solid #D4912A; padding: 8pt 12pt; border-radius: 4px; margin: 8pt 0; page-break-inside: avoid; }
+  .sec { background: #fde9e6; border-left: 4px solid #D05040; padding: 8pt 12pt; border-radius: 4px; margin: 8pt 0; page-break-inside: avoid; }
+  table { width: 100%; border-collapse: collapse; margin: 8pt 0; font-size: 9.5pt; page-break-inside: avoid; }
+  th, td { border: 1px solid #cfe3da; padding: 5pt 8pt; text-align: left; vertical-align: top; }
+  th { background: #2E9E78; color: #fff; }
+  tr:nth-child(even) td { background: #f4faf7; }
+  ul, ol { margin: 5pt 0 5pt 0; padding-left: 20pt; }
+  li { margin: 2pt 0; }
+  .cover { height: 247mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+  .cover .sub { font-size: 14pt; color: #2E9E78; margin-top: 6pt; }
+  .cover .meta { margin-top: 40pt; color: #6B5E5E; font-size: 10pt; }
+  .toc a { color: #1A6B52; text-decoration: none; }
+  .toc li { margin: 4pt 0; }
+  .pill { font-family: Consolas, monospace; font-size: 8.5pt; background:#EFF8F4; border:1px solid #cfe3da; border-radius:3px; padding:1px 5px; }
+  .small { font-size: 9pt; color:#6B5E5E; }
+  h2 { page-break-before: always; }
+  #cover h2, #toc h2 { page-break-before: avoid; }
+</style>
+</head>
+<body>
+
+<div class="cover" id="cover">
+  <span class="tag">Technical Reference</span>
+  <h1>IncreMat</h1>
+  <div class="sub">How the code, hardware, and platform fit together</div>
+  <p class="lead" style="margin-top:18pt; max-width:150mm;">
+    A companion guide to the two Flutter apps — the <strong>Caregiver</strong> dashboard and the
+    senior-facing <strong>Play</strong> app — plus the concepts they rely on: Dart &amp; Flutter,
+    Riverpod state management, Firebase, Bluetooth Low Energy (BLE), and NFC.
+  </p>
+  <div class="meta">
+    Sarcopenia care · Sit-to-stand training · Generated for the IncreMat team<br>
+    Companion to the inline code comments in <code>src/incremat</code> and <code>src/incremat_play</code>
+  </div>
+</div>
+
+<div id="toc">
+<h2 style="page-break-before:avoid;">Contents</h2>
+<ol class="toc">
+  <li><a href="#big-picture">The big picture — what IncreMat is</a></li>
+  <li><a href="#dart">Dart &amp; Flutter fundamentals</a></li>
+  <li><a href="#riverpod">State management with Riverpod</a></li>
+  <li><a href="#firebase">Firebase: Auth, Firestore &amp; Messaging</a></li>
+  <li><a href="#ble">How Bluetooth Low Energy (BLE) works</a></li>
+  <li><a href="#nfc">How NFC works</a></li>
+  <li><a href="#architecture">App architecture &amp; folder map</a></li>
+  <li><a href="#walkthrough">Code walkthrough by layer</a></li>
+  <li><a href="#dataflow">End-to-end: a rep's journey</a></li>
+  <li><a href="#security">Security model</a></li>
+  <li><a href="#glossary">Glossary</a></li>
+</ol>
+</div>
+
+<!-- 1 -->
+<h2 id="big-picture">1 · The big picture — what IncreMat is</h2>
+<p class="lead">IncreMat is a smart exercise mat that turns the simple <strong>sit-to-stand</strong> motion into
+tracked, gamified daily training for older adults, to fight <strong>sarcopenia</strong> (age-related muscle loss).</p>
+
+<p>There are three pieces of software in play, plus the physical mat:</p>
+<table>
+  <tr><th>Piece</th><th>Who uses it</th><th>What it does</th></tr>
+  <tr><td><strong>The mat</strong> (ESP32-S3 firmware)</td><td>The senior sits on it</td><td>Senses each stand, counts reps, has an NFC reader, broadcasts over Bluetooth. <span class="small">(Firmware lives outside these repos.)</span></td></tr>
+  <tr><td><strong>Caregiver app</strong><br><span class="pill">src/incremat</span></td><td>Family / carers</td><td>Dashboard: live reps, strength trends, mobility alerts, reports, managing seniors.</td></tr>
+  <tr><td><strong>Play app</strong><br><span class="pill">src/incremat_play</span></td><td>The senior</td><td>Big, friendly, gamified: a virtual pet that grows as they exercise; reads reps live from the mat.</td></tr>
+</table>
+
+<div class="card">
+<strong>Why two apps?</strong> They are two <em>layers</em> of the same product. The Play app is the
+senior-facing motivation layer (large text, high contrast, a pet, sound). The Caregiver app is the
+data/dashboard layer for whoever supports them. They share the same Firebase backend, so what the
+senior does shows up on the carer's screen.
+</div>
+
+<h3>The clinical idea</h3>
+<p>Two well-known measures underpin the product:</p>
+<ul>
+  <li><strong>30-Second Chair Stand Test (30CST)</strong> — how many stands in 30 s; more = stronger legs. Used to set a starting daily goal and rate fall risk against age/sex norms (see <code>core/utils/chair_stand.dart</code>).</li>
+  <li><strong>Five-Times Sit-to-Stand (5XSST)</strong> — time to do 5 stands; slower over time signals declining mobility. The app captures an at-home proxy (time of the first 5 reps of a session) and watches its trend to raise <em>mobility alerts</em> (see <code>providers/mobility_alert_provider.dart</code>).</li>
+</ul>
+
+<!-- 2 -->
+<h2 id="dart">2 · Dart &amp; Flutter fundamentals</h2>
+<p><strong>Dart</strong> is the programming language; <strong>Flutter</strong> is the UI framework. One Dart
+codebase compiles to Android, iOS, web and desktop. The core idea of Flutter: <em>everything is a
+widget</em>, and the UI is a <em>function of state</em> — you describe what the screen should look like
+for the current data, and Flutter redraws when the data changes.</p>
+
+<h3>Dart syntax you'll see constantly</h3>
+<table>
+  <tr><th>Syntax</th><th>Meaning</th></tr>
+  <tr><td><code>final x = 5;</code></td><td>A variable that can't be reassigned. <code>const</code> is similar but fixed at compile time.</td></tr>
+  <tr><td><code>String?</code></td><td>The <code>?</code> means <em>nullable</em> — it may hold <code>null</code>. Without it, null is impossible.</td></tr>
+  <tr><td><code>x ?? y</code></td><td>"x, or y if x is null." (Null-coalescing.) <code>x?.foo</code> calls foo only if x isn't null.</td></tr>
+  <tr><td><code>a..b()..c()</code></td><td>Cascade — call several methods on the same object.</td></tr>
+  <tr><td><code>(int, String)</code></td><td>A <em>record</em> — a lightweight group of values returned together.</td></tr>
+  <tr><td><code>Future&lt;T&gt;</code></td><td>A value that will arrive later (async). You <code>await</code> it.</td></tr>
+  <tr><td><code>Stream&lt;T&gt;</code></td><td>A sequence of values over time you can <code>listen</code> to (e.g. live reps).</td></tr>
+  <tr><td><code>_name</code></td><td>A leading underscore = <em>private</em> to its file.</td></tr>
+  <tr><td><code>=&gt;</code></td><td>Shorthand for a function that returns one expression.</td></tr>
+</table>
+
+<h3>async / await</h3>
+<p>Anything that takes time (network, Bluetooth, disk) returns a <code>Future</code>. Marking a function
+<code>async</code> lets you <code>await</code> each step and write it top-to-bottom as if it were
+sequential:</p>
+<pre><code>Future&lt;void&gt; connect() async {
+  await turnOnBluetooth();   // pause here until done
+  final mat = await scan(); // then this
+  await mat.connect();      // then this
+}</code></pre>
+
+<h3>Widgets: Stateless vs Stateful</h3>
+<ul>
+  <li><strong>StatelessWidget</strong> — draws purely from its inputs; never changes itself (e.g. a label).</li>
+  <li><strong>StatefulWidget</strong> — owns mutable state and rebuilds when it calls <code>setState</code> (e.g. a form, a toggle).</li>
+  <li>In this app you'll mostly see <strong>ConsumerWidget</strong> / <strong>ConsumerStatefulWidget</strong> — the same thing but with access to Riverpod (next section).</li>
+</ul>
+<div class="card"><strong>The build method</strong> is the heart of every widget: it returns the widget tree
+to display. Flutter calls it again whenever the widget's data changes, and efficiently updates only
+what differs. You'll see deeply nested widgets like <code>Scaffold &gt; SafeArea &gt; Column &gt; ...</code>
+— this <em>composition</em> (small widgets inside bigger ones) is how all Flutter UIs are built.</p></div>
+
+<!-- 3 -->
+<h2 id="riverpod">3 · State management with Riverpod</h2>
+<p>As apps grow, you need a tidy way to share data (the logged-in user, the list of seniors, live reps)
+across many screens without passing it down by hand. <strong>Riverpod</strong> is the library IncreMat uses
+for this. A <strong>provider</strong> is a named, globally-readable piece of state or logic.</p>
+
+<h3>Reading providers</h3>
+<table>
+  <tr><th>Call</th><th>Use it for</th></tr>
+  <tr><td><code>ref.watch(p)</code></td><td>Read a value AND rebuild this widget whenever it changes. The default for UI.</td></tr>
+  <tr><td><code>ref.read(p)</code></td><td>Read once, no rebuild. For one-off actions (e.g. inside a button press).</td></tr>
+  <tr><td><code>ref.listen(p, cb)</code></td><td>Run a side effect on change (navigate, show a toast) without rebuilding.</td></tr>
+</table>
+
+<h3>Kinds of provider used in IncreMat</h3>
+<table>
+  <tr><th>Type</th><th>Holds</th><th>Example in the code</th></tr>
+  <tr><td><code>Provider</code></td><td>A computed value / service</td><td><code>hardwareServiceProvider</code></td></tr>
+  <tr><td><code>StreamProvider</code></td><td>A live stream as loading/data/error</td><td><code>authStateProvider</code>, <code>seniorsStreamProvider</code></td></tr>
+  <tr><td><code>StateProvider</code></td><td>One simple mutable value</td><td><code>activeExerciserIdProvider</code></td></tr>
+  <tr><td><code>NotifierProvider</code></td><td>A class with state + methods</td><td><code>liveSessionProvider</code>, <code>localeProvider</code></td></tr>
+  <tr><td><code>AsyncNotifierProvider</code></td><td>Async state (with loading/error)</td><td><code>authNotifierProvider</code></td></tr>
+  <tr><td><code>*.family</code></td><td>A provider parameterised by an argument</td><td><code>sessionRepositoryProvider(seniorId)</code></td></tr>
+</table>
+
+<div class="card"><strong>AsyncValue</strong> — anything async (a stream/future) arrives wrapped as an
+<code>AsyncValue</code> with three states: <em>loading</em>, <em>data</em>, <em>error</em>. The UI handles
+all three at once with <code>.when(data:…, loading:…, error:…)</code>, so loading spinners and error
+messages fall out naturally. See <code>features/auth/auth_wrapper.dart</code>.</div>
+
+<pre><code>// A provider:
+final localeProvider = NotifierProvider&lt;LocaleNotifier, Locale&gt;(LocaleNotifier.new);
+
+// A widget reading it — rebuilds when the language changes:
+class MyApp extends ConsumerWidget {
+  Widget build(context, ref) {
+    final locale = ref.watch(localeProvider);
+    return MaterialApp(locale: locale, ...);
+  }
+}</code></pre>
+<p class="small">Every app is wrapped in a <code>ProviderScope</code> (in <code>main.dart</code>) — that's the
+container that stores all provider state.</p>
+
+<!-- 4 -->
+<h2 id="firebase">4 · Firebase: Auth, Firestore &amp; Messaging</h2>
+<p><strong>Firebase</strong> is Google's backend-as-a-service. IncreMat uses three parts of it, so there's
+no custom server to run.</p>
+
+<h3>Authentication</h3>
+<ul>
+  <li><strong>Caregiver app</strong> — real email/password accounts (<code>auth_provider.dart</code>, <code>login_screen.dart</code>).</li>
+  <li><strong>Play app</strong> — seniors don't manage passwords. They sign in with a <em>join code</em>; under the hood the app uses Firebase <strong>anonymous auth</strong> so database reads are still authenticated (<code>services/auth_service.dart</code>).</li>
+</ul>
+
+<h3>Cloud Firestore (the database)</h3>
+<p>Firestore is a cloud <strong>NoSQL</strong> database organised as <strong>collections</strong> (folders)
+of <strong>documents</strong> (JSON-like records), which can themselves contain sub-collections. IncreMat's
+shape:</p>
+<pre><code>seniors/{seniorId}                     ← a senior's profile
+   ├── sessions/{autoId}               ← each completed exercise session
+   ├── live/current                    ← mirror of the in-progress session (live)
+   ├── caregivers/{caregiverId}        ← who may view this senior
+   ├── pets/{petId}                    ← Play app: the senior's pets
+   └── expEvents/{id}                  ← Play app: milestone history
+caregiver_access/{caregiverId}         ← list of seniorIds a carer can see + FCM tokens
+nfc_uids/{uidHex}                      ← card UID → seniorId
+joinCodes/{CODE}                       ← join code → seniorId
+duets/{code}                           ← Play app: a paired exercise lobby</code></pre>
+
+<div class="card"><strong>Two ways to read.</strong>
+<code>.get()</code> reads once (a snapshot in time — used for reports). <code>.snapshots()</code> returns a
+<em>live stream</em> that re-emits whenever the data changes — this is why the caregiver's dashboard
+updates the instant the senior does a rep. Most repositories expose both.</div>
+
+<div class="note"><strong>Offline persistence.</strong> Firestore caches data on the device and
+<em>queues writes</em> when offline, replaying them when the connection returns. That's why a logged
+session is never lost even with no signal — and why the session-save code uses a <code>.timeout()</code>:
+the write is safely queued even if the server acknowledgement is slow.</div>
+
+<h3>The model ↔ Firestore pattern</h3>
+<p>Every data type has a class with three companions you'll see everywhere (e.g. <code>models/senior.dart</code>):</p>
+<ul>
+  <li><code>fromMap(map, id)</code> — build the object <em>from</em> a Firestore document (with defensive casts &amp; defaults).</li>
+  <li><code>toMap()</code> — turn the object <em>into</em> a document to save.</li>
+  <li><code>copyWith(...)</code> — make a modified copy (because the fields are immutable <code>final</code>).</li>
+</ul>
+
+<h3>Cloud Messaging (FCM)</h3>
+<p>Push notifications for decline/fitness reminders even when the app is closed. The device registers a
+<em>token</em> (its push address) stored on the caregiver's access doc (<code>services/notifications/push_service.dart</code>).
+Day-to-day reminders are <em>local</em> notifications fired by the phone itself (<code>notification_service.dart</code>).</p>
+
+<!-- 5 -->
+<h2 id="ble">5 · How Bluetooth Low Energy (BLE) works</h2>
+<p class="lead">BLE is how the phone talks to the mat wirelessly, using very little power. Understanding five
+words unlocks the whole <code>ble_hardware_service.dart</code> / <code>mat_ble_service.dart</code> files.</p>
+
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td><strong>Advertise</strong></td><td>A BLE device broadcasts its name so phones can find it. The mat advertises as <code>"IncreMat"</code>.</td></tr>
+  <tr><td><strong>Scan</strong></td><td>The phone listens for advertising devices.</td></tr>
+  <tr><td><strong>GATT</strong></td><td>The data layout a device exposes once connected — a table of services &amp; characteristics.</td></tr>
+  <tr><td><strong>Service</strong></td><td>A logical group of related values, named by a UUID.</td></tr>
+  <tr><td><strong>Characteristic</strong></td><td>An individual value you can <em>read</em>, <em>write</em>, or <em>subscribe</em> to. Also UUID-named.</td></tr>
+  <tr><td><strong>Notify</strong></td><td>A subscription: the device <em>pushes</em> a new value whenever it changes — no polling.</td></tr>
+  <tr><td><strong>UUID</strong></td><td>A 128-bit id. Phone &amp; firmware must agree on the exact same UUIDs — see <code>ble_constants.dart</code>.</td></tr>
+  <tr><td><strong>RSSI</strong></td><td>Signal strength in dBm — negative; closer to 0 = stronger (−45 great, −90 weak).</td></tr>
+</table>
+
+<h3>The connection sequence (in <code>connect()</code>)</h3>
+<ol>
+  <li><strong>Turn on</strong> the Bluetooth radio if needed.</li>
+  <li><strong>Scan</strong> for a device advertising the name "IncreMat" (give up after 15 s).</li>
+  <li><strong>Connect</strong> to it (fail after 10 s if unresponsive).</li>
+  <li><strong>Discover</strong> its GATT table; find our service by UUID.</li>
+  <li><strong>Subscribe</strong> (<code>setNotifyValue(true)</code>) to each characteristic we care about and attach a handler.</li>
+  <li>Each handler <strong>decodes the bytes</strong> and pushes a value onto a Dart <code>Stream</code> the app watches.</li>
+</ol>
+
+<h3>The mat's characteristics</h3>
+<table>
+  <tr><th>Characteristic</th><th>Mode</th><th>Bytes → meaning</th></tr>
+  <tr><td>repCount</td><td>notify</td><td>2 bytes, little-endian uint16 = cumulative reps</td></tr>
+  <tr><td>repSpeed</td><td>notify</td><td>4 bytes, little-endian float32 = avg seconds/rep</td></tr>
+  <tr><td>battery</td><td>notify</td><td>1 byte = battery %</td></tr>
+  <tr><td>matPlaced</td><td>notify</td><td>1 byte: 1 = on chair, 0 = removed</td></tr>
+  <tr><td>nfcScan</td><td>notify</td><td>text bytes = tapped card's UID</td></tr>
+  <tr><td>musicTrack</td><td>write</td><td>text bytes = track name to sync</td></tr>
+</table>
+
+<div class="note"><strong>Why the bit-shifting?</strong> BLE delivers raw bytes, so the code must rebuild
+numbers itself. A rep count arrives as two bytes, low first ("little-endian"):
+<code>count = data[0] | (data[1] &lt;&lt; 8)</code> — keep the low byte, shift the high byte up by 8 bits
+(×256), OR them. e.g. bytes <code>[44, 1]</code> → <code>44 | 256</code> → <strong>300</strong>.</div>
+
+<div class="card"><strong>Two connections at once.</strong> The senior's Play app AND the caregiver app can
+both read the mat live, so the firmware is configured to allow <strong>two simultaneous BLE
+connections</strong> (and to keep advertising after the first connects). The Play app reads reps straight
+off the mat for an instant on-screen count — no Firebase round-trip.</div>
+
+<!-- 6 -->
+<h2 id="nfc">6 · How NFC works</h2>
+<p class="lead">NFC (Near-Field Communication) lets the phone or the mat read a card held within a couple
+of centimetres. IncreMat uses it to answer one question: <em>"who is on the mat right now?"</em></p>
+
+<h3>The key concept: the UID</h3>
+<p>Every NFC chip has a permanent hardware <strong>UID</strong> (unique id). IncreMat never writes data to
+cards — it only reads this UID and looks it up. Any NFC card works: EZ-Link, building passes, bank cards,
+blank NTAG stickers. The UID bytes are formatted as a lowercase hex string, e.g. <code>04ab10c3</code>
+(see <code>bytesToHex</code> in <code>services/nfc/nfc_service.dart</code>).</p>
+
+<div class="note"><strong>NFC is several radio standards, not one.</strong> Cards speak NfcA, NfcB/IsoDep,
+NfcF or NfcV. <code>extractUid()</code> simply tries each "technology view" until one returns an
+identifier — which is why it works with such a wide range of cards.</div>
+
+<h3>Two readers, same result</h3>
+<ul>
+  <li><strong>Phone NFC</strong> — tap a card on the phone; handled by the <code>nfc_manager</code> plugin.</li>
+  <li><strong>Mat NFC</strong> — the mat's own reader sends the UID to the phone over BLE (the <code>nfcScan</code> characteristic above).</li>
+</ul>
+<p>Either way, the UID is looked up in <code>nfc_uids/{uid}</code> → a <code>seniorId</code>
+(<code>nfc_uid_service.dart</code>). The app then attributes the session to that senior. This is what lets
+several seniors share one mat: tap your card, and your reps are logged to <em>you</em>.</p>
+
+<div class="sec"><strong>Security:</strong> a card UID is treated as a credential — knowing it lets you
+identify as that senior — so it's only ever used after a caregiver has explicitly enrolled the card
+(<code>nfc_write_sheet.dart</code>). It's never shared or used for pairing.</div>
+
+<!-- 7 -->
+<h2 id="architecture">7 · App architecture &amp; folder map</h2>
+<p>Both apps follow the same <strong>layered</strong> structure. Data flows up; actions flow down. Each
+layer only knows about the one below it, which keeps things testable and easy to change.</p>
+
+<pre><code>UI (features/)        screens &amp; widgets — what the user sees
+   │  watches providers / calls their methods
+State (providers/)    Riverpod — holds &amp; combines app state
+   │  calls
+Services (services/)  talk to the outside world: BLE, NFC, Firestore, audio
+   │  read/write
+Models (models/)      plain data classes (Senior, SessionLog, Pet, …)
+Core (core/)          constants, theme, utilities (colors, rep_segmenter, …)</code></pre>
+
+<h3>Caregiver app — <span class="pill">src/incremat/lib</span> (56 files)</h3>
+<table>
+  <tr><th>Folder</th><th>What lives there</th></tr>
+  <tr><td><code>core/</code></td><td>Brand colours, text styles, theme, BLE UUIDs, the chair-stand norms and the <strong>RepSegmenter</strong>.</td></tr>
+  <tr><td><code>models/</code></td><td><code>Senior</code>, <code>SessionLog</code>, <code>SyncStatus</code>.</td></tr>
+  <tr><td><code>services/hardware/</code></td><td>The <code>HardwareService</code> interface + real BLE, simulator &amp; mock implementations.</td></tr>
+  <tr><td><code>services/</code> (rest)</td><td>NFC, Firestore repositories (seniors, sessions, join codes), notifications, sync.</td></tr>
+  <tr><td><code>providers/</code></td><td>Auth, hardware, seniors, live session, insights, mobility alerts, music, etc.</td></tr>
+  <tr><td><code>features/</code></td><td>Screens grouped by area: auth, home, insights, hardware, seniors, settings, reports.</td></tr>
+</table>
+
+<h3>Play app — <span class="pill">src/incremat_play/lib</span> (33 files)</h3>
+<table>
+  <tr><th>Folder</th><th>What lives there</th></tr>
+  <tr><td><code>core/</code></td><td>Vivid palette (+ dark / high-contrast sets), Nunito typography, theme, BLE UUIDs.</td></tr>
+  <tr><td><code>models/</code></td><td><code>Pet</code> &amp; species/stages, <code>Senior</code>, <code>LiveSession</code>, <code>DuetSession</code>.</td></tr>
+  <tr><td><code>services/</code></td><td>Direct-from-mat BLE, gamification (game / pet / consistency), senior &amp; auth services.</td></tr>
+  <tr><td><code>providers/</code></td><td>Auth, mat connection, senior/pet state, accessibility, onboarding, locale.</td></tr>
+  <tr><td><code>features/</code></td><td>Home, login, sanctuary, duet, and the celebration screens (egg award, hatching, evolution).</td></tr>
+</table>
+
+<div class="card"><strong>The swappable-hardware trick (caregiver app).</strong> The app depends only on the
+<code>HardwareService</code> <em>interface</em>, never a concrete class. <code>hardwareServiceProvider</code>
+hands it either the real <code>BleHardwareService</code> or the fake <code>SimulatorHardwareService</code>
+based on a toggle — so the whole app can be demoed without a physical mat, and the UI never knows the
+difference. This is "dependency inversion."</div>
+
+<!-- 8 -->
+<h2 id="walkthrough">8 · Code walkthrough by layer</h2>
+
+<h3>Core — the foundations</h3>
+<ul>
+  <li><code>app_colors.dart</code> / <code>app_text_styles.dart</code> / <code>app_theme.dart</code> — the single source of truth for the look. Defined once, used everywhere.</li>
+  <li><code>ble_constants.dart</code> — the shared UUID "contract" with the firmware.</li>
+  <li><code>chair_stand.dart</code> — clinical norms for the 30CST and the recommended-goal maths.</li>
+  <li><code>rep_segmenter.dart</code> — <strong>important.</strong> The mat reports one ever-growing total; this turns it into per-session reps by tracking a baseline, and handles the edge cases (reconnects, mat resets, user switches). Session reps = current total − baseline.</li>
+</ul>
+
+<h3>Services — the outside world</h3>
+<ul>
+  <li><code>ble_hardware_service.dart</code> — the real Bluetooth driver (scan → connect → discover → notify → decode → stream).</li>
+  <li><code>simulator_hardware_service.dart</code> — a fake mat driven from the Developer screen; same interface.</li>
+  <li><code>session_repository.dart</code> / <code>senior_repository.dart</code> — Firestore read/write, hidden behind plain methods. Note <code>watch…</code> (live streams) vs <code>get…</code> (one-shot).</li>
+  <li><code>join_code_service.dart</code> — generates collision-free join codes with a secure RNG and a Firestore transaction.</li>
+  <li><code>nfc_service.dart</code> / <code>nfc_uid_service.dart</code> — read a card UID, map it to a senior.</li>
+</ul>
+
+<h3>Providers — the brain</h3>
+<ul>
+  <li><code>live_session_provider.dart</code> — listens to the mat's rep stream, accumulates the current session via the RepSegmenter, attributes it to the right senior, and saves it to Firestore. Holds the <code>finalizeCurrentSession()</code> logic that guarantees a session is written before the active exerciser switches.</li>
+  <li><code>senior_provider.dart</code> — the central hub: who's selected, who's on the mat, the session streams. Returns mock data when logged out so demo mode "just works."</li>
+  <li><code>insights_provider.dart</code> — turns raw sessions into the dashboard numbers (today, weekly bars, consistency, monthly totals, latest 5-rep time), folding in any live in-progress session.</li>
+  <li><code>mobility_alert_provider.dart</code> — the clinical early-warning: a pure function analyses 28 days of 5-rep times and flags a sharp (day) or sustained (week) slowdown, then notifies the carer once per event.</li>
+  <li><code>session_music_provider.dart</code> — the layered-stem music engine: instruments fade in as reps climb, with a spoken count every 5 reps (the music ducks under the voice).</li>
+</ul>
+
+<h3>Play app — the gamification</h3>
+<ul>
+  <li><code>models/pet.dart</code> — pets, species, stages (egg→baby→young→adult), EXP and history events.</li>
+  <li><code>consistency_service.dart</code> — the rules: what an ISO week is, and when an egg is earned.</li>
+  <li><code>game_service.dart</code> — orchestrates the reward after each session (award egg? add EXP? evolve?).</li>
+  <li><code>mat_ble_service.dart</code> — a focused BLE client that reads reps straight off the mat as a small state machine (disconnected→scanning→connecting→connected).</li>
+</ul>
+
+<!-- 9 -->
+<h2 id="dataflow">9 · End-to-end: a rep's journey</h2>
+<p>Tying it all together — what happens when a senior stands up once:</p>
+<ol>
+  <li>The mat's sensor detects the stand and increments its internal counter.</li>
+  <li>It pushes the new total over BLE on the <code>repCount</code> characteristic (notify).</li>
+  <li><code>BleHardwareService</code> decodes the 2 bytes and emits the number on <code>repCountStream</code>.</li>
+  <li><code>LiveSessionNotifier</code> hears it, runs it through the <code>RepSegmenter</code> to get this session's rep count, and attributes it to the active senior.</li>
+  <li>It mirrors the running count to <code>seniors/{id}/live/current</code> in Firestore.</li>
+  <li>The <strong>caregiver dashboard</strong> watches that doc and the insights provider, so the number ticks up live. The <strong>Play app</strong> shows it even faster — read straight off the mat over its own BLE link.</li>
+  <li>When the session ends (idle, app backgrounded, or an NFC user-switch), it's written permanently to <code>seniors/{id}/sessions</code>. The Play app's <code>GameService</code> may then award an egg or evolve the pet.</li>
+</ol>
+
+<!-- 10 -->
+<h2 id="security">10 · Security model</h2>
+<div class="sec">
+<strong>Credentials are never shared or reused for pairing.</strong>
+<ul>
+  <li><strong>Join code</strong> (<code>ROSE-4821</code>) — a login-style credential to link a caregiver to a senior. Generated with a cryptographic RNG; unique; used only for that linking.</li>
+  <li><strong>NFC UID</strong> — identifies a senior on the mat; only used after a caregiver enrols the card.</li>
+  <li><strong>Duet code</strong> — the head-to-head/co-op pairing code is <em>ephemeral</em> and contains no login credential, so it's safe to share to pair up. It is deliberately <em>not</em> the join code.</li>
+</ul>
+Sensitive account actions (e.g. deleting an account) require recent re-authentication, and Firestore
+security rules — not the app — are the real gate on who can read/write each document.
+</div>
+
+<!-- 11 -->
+<h2 id="glossary">11 · Glossary</h2>
+<table>
+  <tr><th>Term</th><th>Meaning</th></tr>
+  <tr><td>Sarcopenia</td><td>Age-related loss of muscle mass &amp; strength — the condition IncreMat targets.</td></tr>
+  <tr><td>30CST</td><td>30-Second Chair Stand Test — stands in 30 s; more = stronger.</td></tr>
+  <tr><td>5XSST</td><td>Five-Times Sit-to-Stand — time for 5 stands; slower over time = declining mobility.</td></tr>
+  <tr><td>Widget</td><td>The building block of a Flutter UI.</td></tr>
+  <tr><td>Provider</td><td>A Riverpod unit of shared state/logic.</td></tr>
+  <tr><td>Future / Stream</td><td>A value that arrives later / a sequence of values over time.</td></tr>
+  <tr><td>Firestore</td><td>Google's cloud NoSQL database (collections of documents).</td></tr>
+  <tr><td>BLE</td><td>Bluetooth Low Energy — low-power wireless link to the mat.</td></tr>
+  <tr><td>GATT / Characteristic</td><td>The data layout a BLE device exposes / one readable-or-writable value in it.</td></tr>
+  <tr><td>Notify</td><td>A BLE subscription where the device pushes new values automatically.</td></tr>
+  <tr><td>RSSI</td><td>Signal strength in dBm (negative; nearer 0 is stronger).</td></tr>
+  <tr><td>Little-endian</td><td>Byte order where the least-significant byte comes first.</td></tr>
+  <tr><td>NFC / UID</td><td>Tap-to-read radio / a card's permanent unique id.</td></tr>
+  <tr><td>FCM</td><td>Firebase Cloud Messaging — push notifications.</td></tr>
+  <tr><td>Repository</td><td>A class that hides database details behind plain methods.</td></tr>
+  <tr><td>RepSegmenter</td><td>Converts the mat's running total into per-session reps.</td></tr>
+</table>
+
+<p class="small" style="margin-top:20pt; border-top:1px solid #cfe3da; padding-top:8pt;">
+This reference is a companion to the inline comments now present in every file under
+<code>src/incremat/lib</code> and <code>src/incremat_play/lib</code>. Read a screen's comments alongside
+the relevant section here for the fullest picture.
+</p>
+
+</body>
+</html>

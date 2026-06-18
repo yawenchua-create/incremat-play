@@ -6,11 +6,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../l10n/app_localizations.dart';
 
+/// Handles the senior's lightweight login. Seniors don't have email accounts —
+/// they sign in with a JOIN CODE, and under the hood we use Firebase ANONYMOUS
+/// auth (so Firestore reads are authenticated) plus a saved senior id in
+/// SharedPreferences to remember them. `ensureSignedIn`/`ensureClaimed` make
+/// sure a Firebase user exists and the senior is linked before reads happen.
 class AuthService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
 
-  static const _seniorIdKey = 'senior_id';
+  static const _seniorIdKey = 'senior_id'; // SharedPreferences key for the saved senior
   // Every network call is bounded so the login button can never hang forever.
   static const _timeout = Duration(seconds: 15);
 

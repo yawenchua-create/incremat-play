@@ -13,6 +13,10 @@ import '../../providers/senior_provider.dart';
 import '../../services/pet_service.dart';
 import '../onboarding/onboarding_screen.dart';
 
+/// The senior's settings/profile screen: accessibility controls (text size,
+/// dark mode, high contrast — via accessibilityProvider), language toggle, the
+/// replayable welcome guide, and sign-out. `kDebugMode` gates a few dev-only
+/// helpers so they never appear in a real build.
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 

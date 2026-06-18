@@ -4,7 +4,12 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../core/constants/ble_constants.dart';
 
-/// Connection state of the senior's phone to the mat.
+/// Connection state of the senior's phone to the mat, modelled as a small STATE
+/// MACHINE: the connect() flow walks disconnected → scanning → connecting →
+/// connected (or notFound), pushing each step down `stateStream` so the UI can
+/// show "Searching…", "Connecting…", etc. (The caregiver app's
+/// ble_hardware_service.dart has the same BLE flow with fuller line-by-line
+/// comments — scan, connect, GATT discovery, notify, byte parsing.)
 enum MatConnState { disconnected, scanning, connecting, connected, notFound }
 
 /// A focused Bluetooth client for the Play app: scans for the IncreMat mat,
@@ -113,7 +118,10 @@ class MatBleService {
     }
   }
 
-  // 2-byte little-endian uint16 = cumulative reps this session.
+  // Decode the rep packet: 2 bytes, little-endian uint16. low | (high << 8)
+  // rebuilds the number (see ble_hardware_service.dart for the worked example).
+  // This is THE direct-from-mat read that lets the senior see their own live
+  // count without waiting on Firebase.
   void _onRepCountData(List<int> data) {
     if (data.length < 2) return;
     _lastReps = data[0] | (data[1] << 8);

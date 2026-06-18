@@ -1,7 +1,23 @@
+// ════════════════════════════════════════════════════════════════════════════
+// THE PET / GAMIFICATION MODEL. The senior-facing app gives each senior a
+// virtual creature ("Incremon") that gains EXP from exercising and EVOLVES
+// through stages (egg → baby → young → adult). This file defines the pet, its
+// species/stage data, and the history events (EXP gained, egg received, hatched).
+//
+// Dart features used heavily below:
+//   • enum         — a fixed set of named values (PetStage, PetSpecies).
+//   • extension    — adds methods/getters to an existing type WITHOUT editing
+//                    it; here it attaches labels & data to the enums.
+//   • switch EXPRESSION (`switch (this) { A => x, B => y }`) — returns a value
+//                    per case, more compact than the statement form.
+// ════════════════════════════════════════════════════════════════════════════
+
 enum PetStage { egg, baby, young, adult }
 
 enum PetSpecies { otter, fox, tortoise, koi }
 
+// `extension ... on PetStage` bolts these getters onto every PetStage value, so
+// you can write `stage.label` or `stage.expToNext` directly on the enum.
 extension PetStageLabel on PetStage {
   String get label {
     switch (this) {
@@ -16,6 +32,7 @@ extension PetStageLabel on PetStage {
     }
   }
 
+  // How much EXP this stage needs before evolving to the next (adult = 0 = max).
   int get expToNext {
     switch (this) {
       case PetStage.egg:
@@ -107,12 +124,18 @@ extension PetSpeciesInfo on PetSpecies {
           },
       };
 
+  // Builds the asset path for the artwork, e.g. "assets/pets/fox_young.png".
+  // Egg reuses the 'baby' image. `name` here is the enum value's name (e.g. "fox").
   String imagePath(PetStage stage) {
     final stageName = (stage == PetStage.egg) ? 'baby' : stage.name;
     return 'assets/pets/${name}_$stageName.png';
   }
 }
 
+/// One senior's pet. Immutable model (fromMap/toMap/copyWith) just like the
+/// caregiver app's Senior. `exp` accumulates with exercise; `stage`/`species`
+/// drive which artwork and names show. Note the legacy fallback in fromMap that
+/// still reads the old integer `speciesIndex` format.
 class Pet {
   final String id;
   final String seniorId;

@@ -10,6 +10,10 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/accessibility_provider.dart';
 import '../../providers/auth_provider.dart';
 
+/// The senior's sign-in screen. Far simpler than the caregiver login: the senior
+/// enters (or NFC-taps) their join code — no email/password. Delegates to the
+/// auth provider/AuthService which does the anonymous-auth + code lookup. Imports
+/// nfc_manager directly so a card tap can fill in the code hands-free.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 

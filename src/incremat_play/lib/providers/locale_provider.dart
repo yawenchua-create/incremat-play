@@ -4,9 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Holds the app's active locale, persisted across launches. Defaults to
 /// English; the language toggle in Profile flips between English and 中文.
+/// (Same pattern as the caregiver app's locale provider.)
 class LocaleNotifier extends Notifier<Locale> {
   static const _key = 'app_locale';
 
+  // Starts English synchronously, then loads the saved language in the
+  // background; when it arrives _load() updates state and the UI re-renders.
   @override
   Locale build() {
     _load();

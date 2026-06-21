@@ -2,8 +2,17 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/auth_service.dart';
 
+// ════════════════════════════════════════════════════════════════════════════
+// Auth for the Play app. Seniors sign in with a JOIN CODE (not email/password) —
+// the app signs into Firebase ANONYMOUSLY behind the scenes so Firestore reads
+// are authenticated, and remembers the senior id locally so they stay logged in.
+// ════════════════════════════════════════════════════════════════════════════
+
+// Shared AuthService instance for the providers below.
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
+// The raw Firebase auth stream (the anonymous user). Most of the app gates on
+// seniorIdProvider below instead — see the note there for why.
 final authStateProvider = StreamProvider<User?>(
   (ref) => ref.watch(authServiceProvider).authStateChanges,
 );
